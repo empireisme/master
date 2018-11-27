@@ -10,9 +10,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-install.packages("devtools")
+#install.packages("devtools")
 library(devtools) 
-install_github("susanathey/causalTree")
+#install_github("susanathey/causalTree")
 library(causalTree)
 ```
 
@@ -32,13 +32,25 @@ x9=rnorm(N,0,sd=1)
 x10=rnorm(N,0,sd=1)
 x11=rnorm(N,0,sd=1)
 x12=rnorm(N,0,sd=1)
+x13=rnorm(N,0,sd=1)
+x14=rnorm(N,0,sd=1)
+x15=rnorm(N,0,sd=1)
+x16=rnorm(N,0,sd=1)
+x17=rnorm(N,0,sd=1)
+x18=rnorm(N,0,sd=1)
+x19=rnorm(N,0,sd=1)
+x20=rnorm(N,0,sd=1)
+
+
+X=data.frame( x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20             )
+
 ```
 
 
 ```{r  design 1  }
 eta_x=1/2*x1+x2
 Kappa_x=1/2*x1
-w=rbinom(N,1,0.5)
+treatment=rbinom(N,1,0.5)
 
 makeY=function(eta,Kappa ){
   Y=eta+1/2*(2*w-1)*Kappa+episolon
@@ -77,6 +89,39 @@ Y3=makeY(eta_x,Kappa_x)
 
 ```
 
+```{r   將資料彙整成dataframe   }
+
+design1 <- data.frame( x1,x2,Y1,treatment    )
+design2 <- data.frame( x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,Y2,treatment    )
+desiggn3 <- data.frame(x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20,Y3,treatment)
+
+
+
+
+```
+
+```{r}
+
+tree <- causalTree( Y1~x1+x2 ,data=design1 ,treatment = design1$treatment   )
+
+
+
+
+```
+
+```{r}
+tree <- causalTree(y~ x1 + x2 + x3 + x4, data = simulation.1, treatment = simulation.1$treatment,
+split.Rule = "CT", cv.option = "CT", split.Honest = T, cv.Honest = T, split.Bucket = F, 
+xval = 5, cp = 0, minsize = 20, propensity = 0.5)
+                  
+opcp <- tree$cptable[,1][which.min(tree$cptable[,4])]
+
+opfit <- prune(tree, opcp)
+
+rpart.plot(opfit)
+```
+
+
 
 ```{r}
 tree <- causalTree(y~ x1 + x2 + x3 + x4, data = simulation.1, treatment = simulation.1$treatment,
@@ -90,6 +135,8 @@ class(simulation.1)
 
 tree$cptable
 opfit$call
+opfit$functions
+
 ```
 
 ```{r}
