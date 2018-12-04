@@ -1,0 +1,159 @@
+---
+title: "Untitled"
+author: "Chen Ning Kuan"
+date: "2018年11月22日"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(MASS)
+library(rpart)
+
+
+mysimulation1 <- function(  ){
+  
+N=1000
+episolon=rnorm(  N,0,0.01    )
+x1=rnorm(N,0,sd=1)
+x2=rnorm(N,0,sd=1)
+x3=rnorm(N,0,sd=1)
+x4=rnorm(N,0,sd=1)
+x5=rnorm(N,0,sd=1)
+x6=rnorm(N,0,sd=1)
+x7=rnorm(N,0,sd=1)
+x8=rnorm(N,0,sd=1)
+x9=rnorm(N,0,sd=1)
+x10=rnorm(N,0,sd=1)
+x11=rnorm(N,0,sd=1)
+x12=rnorm(N,0,sd=1)
+x13=rnorm(N,0,sd=1)
+x14=rnorm(N,0,sd=1)
+x15=rnorm(N,0,sd=1)
+x16=rnorm(N,0,sd=1)
+x17=rnorm(N,0,sd=1)
+x18=rnorm(N,0,sd=1)
+x19=rnorm(N,0,sd=1)
+x20=rnorm(N,0,sd=1)
+X=data.frame( x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20)
+
+eta_x=1/2*x1+x2
+Kappa_x=1/2*x1
+w=rbinom(N,1,0.5)
+treatment <- w
+makeY=function(eta,Kappa ){
+  Y=eta+1/2*(2*w-1)*Kappa+episolon
+}
+Y1=makeY(eta_x,Kappa_x     )
+Y=eta_x+1/2*(2*w-1)*Kappa_x+episolon
+
+x=c(3,-5,4)
+indicator(x)
+
+indicator=function(x){
+  y <- ifelse(x>0,1,0)
+  return(x*y)
+}
+
+eta_x=1/2*(x1+x2)+(x3+x4+x5+x6)
+
+Kappa_x=indicator(x1)+indicator(x2)
+
+Y2=makeY(eta_x,Kappa_x)
+
+design2 <- data.frame( x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,Y2,treatment    )
+
+
+tree <- causalTree( Y2~x1+x2+x3+x4+x5+x6+x7+x8+x9+x10 ,data=design2 ,treatment = design2$treatment ,split.Rule = "CT", cv.option = "CT", split.Honest = T, cv.Honest = T, split.Bucket = F, 
+xval = 5, cp = 0, minsize = 20, propensity = 0.5  )
+tree$cptable
+
+tree$splits
+opcp <- tree$cptable[,1][which.min(tree$cptable[,4])]
+
+opfit <- prune(tree, opcp)
+A <- sum(opfit$frame$var == "<leaf>")
+
+return(A)
+
+}
+
+numberofleafs <- replicate(20,mysimulation())
+
+
+```
+
+```{r}
+
+mysimulation2<- function(){
+N=1000
+episolon=rnorm(  N,0,0.01    )
+x1=rnorm(N,0,sd=1)
+x2=rnorm(N,0,sd=1)
+x3=rnorm(N,0,sd=1)
+x4=rnorm(N,0,sd=1)
+x5=rnorm(N,0,sd=1)
+x6=rnorm(N,0,sd=1)
+x7=rnorm(N,0,sd=1)
+x8=rnorm(N,0,sd=1)
+x9=rnorm(N,0,sd=1)
+x10=rnorm(N,0,sd=1)
+x11=rnorm(N,0,sd=1)
+x12=rnorm(N,0,sd=1)
+x13=rnorm(N,0,sd=1)
+x14=rnorm(N,0,sd=1)
+x15=rnorm(N,0,sd=1)
+x16=rnorm(N,0,sd=1)
+x17=rnorm(N,0,sd=1)
+x18=rnorm(N,0,sd=1)
+x19=rnorm(N,0,sd=1)
+x20=rnorm(N,0,sd=1)
+X=data.frame( x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20)
+
+eta_x=1/2*x1+x2
+Kappa_x=1/2*x1
+w=rbinom(N,1,0.5)
+treatment <- w
+makeY=function(eta,Kappa ){
+  Y=eta+1/2*(2*w-1)*Kappa+episolon
+}
+Y1=makeY(eta_x,Kappa_x     )
+Y=eta_x+1/2*(2*w-1)*Kappa_x+episolon
+
+x=c(3,-5,4)
+indicator(x)
+
+indicator=function(x){
+  y <- ifelse(x>0,1,0)
+  return(x*y)
+}
+
+eta_x=1/2*(x1+x2)+(x3+x4+x5+x6)
+
+Kappa_x=indicator(x1)+indicator(x2)
+
+Y2=makeY(eta_x,Kappa_x)
+
+design2 <- data.frame( x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,Y2,treatment    )
+
+
+tree <- causalTree( Y2~x1+x2+x3+x4+x5+x6+x7+x8+x9+x10 ,data=design2 ,treatment = design2$treatment ,split.Rule = "CT", cv.option = "CT", split.Honest = T, cv.Honest = T, split.Bucket = F, 
+xval = 5, cp = 0, minsize = 20, propensity = 0.5  )
+tree$cptable
+
+tree$splits
+opcp <- tree$cptable[,1][which.min(tree$cptable[,4])]
+
+opfit <- prune(tree, opcp)
+
+A2 <- opfit$variable.importance
+return(A2)
+}
+
+importancevarible<- replicate(10,mysimulation2())
+
+```
+
