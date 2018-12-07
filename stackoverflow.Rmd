@@ -81,8 +81,9 @@ return(A)
 
 }
 
-numberofleafs <- replicate(20,mysimulation())
+numberofleafs <- replicate(2000,mysimulation())
 
+mean(numberofleafs )
 
 ```
 
@@ -154,6 +155,11 @@ return(A2)
 }
 
 importancevarible<- replicate(10,mysimulation2())
+
+importancevarible
+
+lapply(importancevarible,sum)
+
 
 ```
 
