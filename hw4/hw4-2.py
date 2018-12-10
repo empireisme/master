@@ -76,6 +76,8 @@ from keras.layers.core import Dense,Dropout,Activation,Flatten
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import SimpleRNN
 
+
+
 modelRNN = Sequential()  #建立模型
 #Embedding層將「數字list」轉換成「向量list」
 modelRNN.add(Embedding(output_dim=32,   #輸出的維度是32，希望將數字list轉換為32維度的向量
@@ -90,7 +92,6 @@ modelRNN.add(SimpleRNN(units=16))
 modelRNN.add(Dense(units=256,activation='relu')) 
 #建立256個神經元的隱藏層
 #ReLU激活函數
-modelRNN.add(Dropout(0.35))
 
 #建立輸出層
 modelRNN.add(Dense(units=1,activation='sigmoid'))
@@ -104,14 +105,65 @@ modelRNN.compile(loss='binary_crossentropy',
      optimizer='adam',
      metrics=['accuracy']) 
 
-train_history1 = modelRNN.fit(x_train,y_train, 
-         epochs=2, 
+train_history1_1 = modelRNN.fit(x_train,y_train, 
+         epochs=10, 
          batch_size=100,
          verbose=2,
          validation_split=0.2)
 
-scores = modelRNN.evaluate(x_test, y_test,verbose=1)
-scores[1]
+scores1_1 = modelRNN.evaluate(x_test, y_test,verbose=1)
+scores1_1[1]
+print(train_history1_1.history.keys())
+train_history1_1.history.values()
+
+
+
+
+
+
+####
+
+
+
+modelRNN1 = Sequential()  #建立模型
+#Embedding層將「數字list」轉換成「向量list」
+modelRNN1.add(Embedding(output_dim=32,   #輸出的維度是32，希望將數字list轉換為32維度的向量
+     input_dim=3800,  #輸入的維度是3800，也就是我們之前建立的字典是3800字
+     input_length=380)) #數字list截長補短後都是380個數字
+
+
+modelRNN1.add(SimpleRNN(units=16))
+ #建立16個神經元的RNN層
+
+#建立隱藏層
+modelRNN1.add(Dense(units=256,activation='relu')) 
+#建立256個神經元的隱藏層
+#ReLU激活函數
+modelRNN1.add(Dropout(0.7))
+
+#建立輸出層
+modelRNN1.add(Dense(units=1,activation='sigmoid'))
+#建立一個神經元的輸出層
+#Sigmoid激活函數
+
+modelRNN1.summary()
+
+#定義訓練模型
+modelRNN1.compile(loss='binary_crossentropy',
+     optimizer='adam',
+     metrics=['accuracy']) 
+
+train_history1_2 = modelRNN1.fit(x_train,y_train, 
+         epochs=10, 
+         batch_size=100,
+         verbose=2,
+         validation_split=0.2)
+
+scores1_2 = modelRNN1.evaluate(x_test, y_test,verbose=1)
+scores1_2[1]
+
+
+
 
 
 
@@ -122,11 +174,13 @@ from keras.layers.core import Dense,Dropout,Activation,Flatten
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
 from keras.callbacks import History 
+
+
 history = History()
+
 modelLSTM = Sequential() 
 modelLSTM.add(Embedding (output_dim=32,input_dim=3800, input_length=380))     
 
-modelLSTM.add(Dropout(0.2)) #隨機在神經網路中放棄20%的神經元，避免overfitting
 
 modelLSTM.add(LSTM(32)) 
 #建立32個神經元的LSTM層
@@ -134,7 +188,7 @@ modelLSTM.add(LSTM(32))
 #建立隱藏層
 modelLSTM .add(Dense(units=256,activation='relu')) 
 #建立256個神經元的隱藏層
-modelLSTM .add(Dropout(0.2))
+
 
 #建立輸出層
 modelLSTM .add(Dense(units=1,activation='sigmoid'))
@@ -147,20 +201,196 @@ modelLSTM.compile(loss='binary_crossentropy',
      optimizer='adam',
      metrics=['accuracy']) 
 
-train_history2 = modelLSTM.fit(x_train,y_train, 
-         epochs=2, 
+train_history2_1 = modelLSTM.fit(x_train,y_train, 
+         epochs=10, 
          batch_size=100,
          verbose=2,
          validation_split=0.2)
+
+scores2_1 = modelLSTM .evaluate(x_test, y_test,verbose=1)
+scores2_1[1]
+
+
+modelLSTM1 = Sequential() 
+modelLSTM1.add(Embedding (output_dim=32,input_dim=3800, input_length=380))     
+
+modelLSTM1.add(Dropout(0.7)) #隨機在神經網路中放棄20%的神經元，避免overfitting
+
+modelLSTM1.add(LSTM(32)) 
+#建立32個神經元的LSTM層
+
+#建立隱藏層
+modelLSTM1 .add(Dense(units=256,activation='relu')) 
+#建立256個神經元的隱藏層
+
+
+#建立輸出層
+modelLSTM1 .add(Dense(units=1,activation='sigmoid'))
+ #建立一個神經元的輸出層
+
+modelLSTM1 .summary()
+
+
+modelLSTM1.compile(loss='binary_crossentropy',
+     optimizer='adam',
+     metrics=['accuracy']) 
+
+train_history2_2 = modelLSTM1.fit(x_train,y_train, 
+         epochs=10, 
+         batch_size=100,
+         verbose=2,
+         validation_split=0.2)
+
+
+scores2_2 = modelLSTM1 .evaluate(x_test, y_test,verbose=1)
+scores2_2[1]
+
+
+train_history1_1.history.values()
+
+train_history1_1.history.keys()
+
+
+train_history1_1.history['acc']
+train_history1_1.history['val_acc']
+train_history1_1.history['loss']
+train_history1_1.history['val_loss']
+
+
+
+
+
+train_history1_2.history.values()
+train_history2_1.history.values()
+train_history2_2.history.values()
+import numpy as np
+import matplotlib.pyplot as plt
+
+graphpath='C:\\Users\\User\\Documents\\GitHub\\master\\hw4\\'
+###
+x = list(range(1,11))
+y1 = train_history1_1.history['acc']
+y2 = train_history1_1.history['val_acc']
+y = np.column_stack((y1, y2))
+plt.figure(1); plt.clf()
+plt.plot(x,y)
+plt.legend(['train', 'validation'])
+plt.xlabel('Epoch')
+plt.ylabel('acc')
+plt.title('Acc of RNN(without dropout)')
+
+plt.savefig(graphpath+'Acc of RNN(without dropout).jpg')
+
+x = list(range(1,11))
+y1 = train_history1_1.history['loss']
+y2 = train_history1_1.history['val_loss']
+y = np.column_stack((y1, y2))
+plt.figure(2); plt.clf()
+plt.plot(x,y)
+plt.legend(['train', 'validation'])
+plt.xlabel('Epoch')
+plt.ylabel('loss')
+plt.title('loss of RNN(without dropout)')
+
+plt.savefig(graphpath+' loss of RNN(without dropout).jpg')
+###
+
+x = list(range(1,11))
+y1 = train_history1_2.history['acc']
+y2 = train_history1_2.history['val_acc']
+y = np.column_stack((y1, y2))
+plt.figure(1); plt.clf()
+plt.plot(x,y)
+plt.legend(['train', 'validation'])
+plt.xlabel('Epoch')
+plt.ylabel('acc')
+plt.title('Acc of RNN(with dropout)')
+
+plt.savefig(graphpath+' Acc of RNN(with dropout).jpg')
+
+
+x = list(range(1,11))
+y1 = train_history1_2.history['loss']
+y2 = train_history1_2.history['val_loss']
+y = np.column_stack((y1, y2))
+plt.figure(2); plt.clf()
+plt.plot(x,y)
+plt.legend(['train', 'validation'])
+plt.xlabel('Epoch')
+plt.ylabel('loss')
+plt.title('loss of RNN(with dropout)')
+
+plt.savefig(graphpath+' loss of RNN(with dropout).jpg')
+
+###
+
+x = list(range(1,11))
+y1 = train_history2_1.history['acc']
+y2 = train_history2_1.history['val_acc']
+y = np.column_stack((y1, y2))
+plt.figure(1); plt.clf()
+plt.plot(x,y)
+plt.legend(['train', 'validation'])
+plt.xlabel('Epoch')
+plt.ylabel('acc')
+plt.title('Acc of LSTM(without dropout)')
+
+plt.savefig(graphpath+' Acc of LSTM(without dropout).jpg')
+
+x = list(range(1,11))
+y1 = train_history2_1.history['loss']
+y2 = train_history2_1.history['val_loss']
+y = np.column_stack((y1, y2))
+plt.figure(2); plt.clf()
+plt.plot(x,y)
+plt.legend(['train', 'validation'])
+plt.xlabel('Epoch')
+plt.ylabel('loss')
+plt.title('loss of LSTM(without dropout)')
+
+plt.savefig(graphpath+' loss of LSTM(without dropout).jpg')
+
+###
+
+x = list(range(1,11))
+y1 = train_history2_2.history['acc']
+y2 = train_history2_2.history['val_acc']
+y = np.column_stack((y1, y2))
+plt.figure(1); plt.clf()
+plt.plot(x,y)
+plt.legend(['train', 'validation'])
+plt.xlabel('Epoch')
+plt.ylabel('acc')
+plt.title('Acc of LSTM(with dropout)')
+
+plt.savefig(graphpath+' Acc of LSTM(with dropout).jpg')
+
+x = list(range(1,11))
+y1 = train_history2_2.history['loss']
+y2 = train_history2_2.history['val_loss']
+y = np.column_stack((y1, y2))
+plt.figure(2); plt.clf()
+plt.plot(x,y)
+plt.legend(['train', 'validation'])
+plt.xlabel('Epoch')
+plt.ylabel('loss')
+plt.title('loss of LSTM(with dropout)')
+
+plt.savefig(graphpath+' loss of LSTM(with dropout).jpg')
+###
+
+
+
+
 
 type(train_history.history)
 
 print(train_history.history.keys())
 
-train_history.history
 
-scores = modelLSTM .evaluate(x_test, y_test,verbose=1)
-scores[1]
+train_history.history.values()
+
+
 
 """
 lines[0]
