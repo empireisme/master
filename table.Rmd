@@ -28,6 +28,8 @@ Surv(aml$time, aml$status)
 aml$time
 aml$status
 y=Surv(data$t,data$d)
-coxph(y ~ sex+race+entry+far+age, X) 
+fit <- coxph(y ~ sex+race+entry+far+age, X) 
+
+summary(fit)
 ```
 
