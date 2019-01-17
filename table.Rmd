@@ -1,0 +1,33 @@
+---
+title: "Untitled"
+author: "Chen Ning Kuan"
+date: "2019年1月17日"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+setwd("~/GitHub/master")
+require(survival)
+data <- read.table("survivaltable.txt",header = T)
+sex <- as.factor(data$sex)
+race <- as.factor(data$race)
+age <- data$age
+entry <- data$entry
+far <- data$far
+X=list(sex,race,age,entry,far    )
+
+```
+
+```{r  to know how to produce sur type data}
+data(aml)
+Surv(aml$time, aml$status)
+aml$time
+aml$status
+y=Surv(data$t,data$d)
+coxph(y ~ sex+race+entry+far+age, X) 
+```
+

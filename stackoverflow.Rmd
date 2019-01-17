@@ -7,15 +7,24 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+#install.packages("devtools")
+library(devtools) 
+#install_github("susanathey/causalTree")
+library(causalTree)
 ```
 
 ```{r}
 library(MASS)
 library(rpart)
-
+indicator=function(x){
+  y <- ifelse(x>0,1,0)
+  return(x*y)
+}
 
 mysimulation1 <- function(  ){
   
+
 N=1000
 episolon=rnorm(  N,0,0.01    )
 x1=rnorm(N,0,sd=1)
@@ -69,23 +78,29 @@ design2 <- data.frame( x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,Y2,treatment    )
 
 tree <- causalTree( Y2~x1+x2+x3+x4+x5+x6+x7+x8+x9+x10 ,data=design2 ,treatment = design2$treatment ,split.Rule = "CT", cv.option = "CT", split.Honest = T, cv.Honest = T, split.Bucket = F, 
 xval = 5, cp = 0, minsize = 20, propensity = 0.5  )
-tree$cptable
 
-tree$splits
+
+
 opcp <- tree$cptable[,1][which.min(tree$cptable[,4])]
 
 opfit <- prune(tree, opcp)
 A <- sum(opfit$frame$var == "<leaf>")
-
 return(A)
 
 }
 
-numberofleafs <- replicate(2000,mysimulation())
+numberofleafs <- replicate(20,mysimulation1())
 
 mean(numberofleafs )
 
 ```
+```{r}
+tree$frame
+tree$where
+tree
+```
+
+
 
 ```{r}
 

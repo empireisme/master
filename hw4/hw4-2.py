@@ -380,9 +380,21 @@ plt.savefig(graphpath+' loss of LSTM(with dropout).jpg')
 ###
 
 
+RNN_testing_acc=scores1_1[1]  #RNN testing acc
+RNN_testing_acc_dropout=scores1_2[1]  #RNN testing acc (dropout 0.7)
+LSTM_testing_acc=scores2_1[1]  #LSTM testing acc
+LSTM_testing_acc_dropout=scores2_2[1]  #LSTM testing acc (dropout 0.7)
 
+print(RNN_testing_acc)
+print(RNN_testing_acc_dropout)
+print(LSTM_testing_acc)
+print(LSTM_testing_acc_dropout)
 
+print(RNN_testing_acc,RNN_testing_acc_dropout,LSTM_testing_acc,LSTM_testing_acc_dropout)
 
+print("A",5,"B",4)
+
+"""
 type(train_history.history)
 
 print(train_history.history.keys())
@@ -390,7 +402,7 @@ print(train_history.history.keys())
 
 train_history.history.values()
 
-
+"""
 
 """
 lines[0]

@@ -1,0 +1,53 @@
+---
+title: "Untitled"
+author: "Chen Ning Kuan"
+date: "2019年1月17日"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+```
+
+```{r}
+library(readr)
+X123 <- read_csv("C:/Users/User/Downloads/123.csv", 
+    col_names = FALSE)
+View(X123)
+```
+
+
+
+```{r}
+use <- ts(X123, frequency = 12, start = c(2001,1))
+plot(use)
+fit <- arima(use)
+summary(fit)
+fit2=ar(use)
+summary(fit2)
+
+
+```
+
+```{r}
+require(lubridate)
+library(readr)
+library(TSA)
+#data <- read_csv("C:/Users/User/Downloads/.csv",header=F)
+
+x3=as.numeric(data[[4]])
+data <- data[-1,]
+class(data)
+x=data[,4]
+x1=as.data.frame(x)
+class(x1)
+as.integer(x1)
+X=x1[[1]]
+class(X)
+X=as.numeric(X)
+```
+
