@@ -1,0 +1,60 @@
+---
+title: "Untitled"
+author: "Chen Ning Kuan"
+date: "2019年1月17日"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+```
+
+```{r}
+library(readr)
+library(tseries)
+library(forecast)
+timedata <- read_csv("C:/Users/User/Downloads/time.csv", 
+    col_names = FALSE)
+View(timedata )
+```
+
+
+
+```{r}
+air <- ts(timedata, frequency = 12, start = c(1999,1))
+length(air)
+
+sair<-ts(as.vector(air[1:204]),frequency=12,start=c(1999,1))
+tsdisplay(sair)
+adf.test(sair)
+auto.arima(sair)
+fit1<-arima(sair,order=c(0,1,1),seasonal=list(order=c(1,1,1),period=12))
+fit2<-arima(sair,order=c(1,0,0),seasonal=list(order=c(0,1,0),period=12))
+tsdiag(fit1)
+```
+
+```{r}
+ytest <- air[205:239]
+f.p1<-forecast(fit1,h=length(ytest),level=c(99.5))
+
+plot(f.p1)
+lines(f.p1$fitted,col="green")
+lines(air,col="red")
+yhat <- f.p1[[4]]
+yhatnumeric <- as.numeric(yhat)
+
+mae=mean(abs(yhatnumeric-ytest))
+
+
+
+```
+
+
+```{r}
+\
+```
+

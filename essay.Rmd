@@ -1,0 +1,101 @@
+---
+title: "lifetable"
+author: "Chen Ning Kuan"
+date: "2019年2月20日"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+```
+
+
+```{r   import data }
+setwd("~/GitHub/master/data")
+library(readxl)
+require(survival)
+library(plyr)
+require(dplyr)
+require(data.table)
+maindata <- read_excel("maindata.xlsx", sheet = "original")
+taipei <- read_excel("taipei.xlsx", sheet = "taipei")
+
+View(maindata)
+maindata1 <-as.data.table(maindata)
+colnames(maindata1) <- c( "city","deathnumber" , "deathyear","buildman","buildnumber","bornyear","material","area")
+maindata2 <- maindata1[,c(1,3,6,7,8)]
+X <- apply(maindata2[,c(1,4)],2,as.factor)
+deathyear <- as.numeric(maindata2$deathyear)
+dt <- data.table(X,deathyear)
+df <- data.frame(X,deathyear)
+
+
+```
+
+```{r   整理出表格 }
+
+library(plyr)
+
+dfcount<- dt%>% count(city, deathyear)
+
+apply(dfcount[,3],2,sum) #check 件數對不對
+
+```
+
+
+
+
+
+```{r}
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
+```
+
+
+```{r}
+library(tidyr)
+library(data.table)
+library(plyr)
+maindatause <-maindata[,c(3,6,7,8)] #留下有用的欄位
+df <- maindatause
+colnames(df)=c(  "deathyear","bornyear","material","area")
+dfuse <- completeFun(df, "bornyear")
+A <- dfuse$bornyear[1]
+substring(A, 1, 3)
+bornyear <- as.numeric(substring(dfuse$bornyear, 1, 3))
+deathyear <- as.numeric(   dfuse$deathyear        )
+dfuse <-cbind(bornyear,deathyear,dfuse[,3],dfuse[,4])
+age <- deathyear-bornyear
+
+sort(deathyear)
+
+
+```
+```{r      去看死亡的分布      }
+which(age<0)
+dfusefinal <- dfuse[-which(age<0),]
+agefinal=dfusefinal$deathyear-dfusefinal$bornyear
+class(agefinal)
+dfusefinal <- cbind(dfusefinal,agefinal)
+
+hist(agefinal) #畫出直方圖
+
+agecount <- dfusefinal %>% 
+  group_by(agefinal) %>% 
+  summarise(avg_count = n())  #莖葉圖
+
+
+plot(density(agefinal))
+X=dfusefinal[,-5]
+y=Surv(dfusefinal$agefinal)
+fit <- coxph(y ~ bornyear,X ) 
+
+summary(fit)
+```
+

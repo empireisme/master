@@ -1,0 +1,124 @@
+---
+title: "taipeilifetable"
+author: "Chen Ning Kuan"
+date: "2019年3月7日"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r 讀資料 }
+setwd("~/GitHub/master/data/taipei")
+library(readxl)
+require(survival)
+library(plyr)
+require(dplyr)
+require(data.table)
+library(readxl)
+
+taipei98 <- read_excel("~/GitHub/master/data/taipei/taipei95.xls",col_names = FALSE)
+
+taipei99 <- read_excel("~/GitHub/master/data/taipei/taipei96.xls",col_names = FALSE)
+taipei100 <- read_excel("~/GitHub/master/data/taipei/taipei97.xls",col_names = FALSE)
+
+taipei101 <- read_excel("~/GitHub/master/data/taipei/taipei98.xls",col_names = FALSE)
+
+taipei102 <- read_excel("~/GitHub/master/data/taipei/taipei99.xls",col_names = FALSE)
+
+taipei103 <- read_excel("~/GitHub/master/data/taipei/taipei100.xls",col_names = FALSE)
+
+taipei104 <- read_excel("~/GitHub/master/data/taipei/taipei101.xls",col_names = FALSE)
+
+taipei105 <- read_excel("~/GitHub/master/data/taipei/taipei102.xls",col_names = FALSE)
+
+taipei106 <- read_excel("~/GitHub/master/data/taipei/taipei103.xls",col_names = FALSE)
+
+taipei107 <- read_excel("~/GitHub/master/data/taipei/taipei104.xls",col_names = FALSE)
+
+X<-taipei98[-c(1,2,3),]
+colnames(X) <- c(X[1,] )
+X <- X[-1,-c(seq(5,23,2))]
+Y <- X[,-c(1,2,3)]
+Z <- cbind(Y,X[,c(1,2)])
+Y <- apply(Y,2,as.numeric)
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r }
+#datagenerator 此函數用來製造可用資料
+
+datagenerator=function(X){
+X<-X[-c(1,2,3),]
+colnames(X) <- c(X[1,] )
+X <- X[-1,-c(seq(5,23,2))]
+Y <- X[,-c(1,2,3)]
+Z <- cbind(Y,X[,c(1,2)])
+Y <- apply(Y,2,as.numeric)
+return(Y)
+}
+
+datagenerator1=function(X){
+X<-X[-c(1,2,3),]
+colnames(X) <- c(X[1,] )
+X <- X[-1,-c(seq(5,23,2))]
+Y <- X[,-c(2,3)]
+Z <- cbind(Y,X[,c(1,2)])
+return(X)
+}
+A <- c(taipei98  ,taipei99 ,taipei100 ,taipei101 ,taipei102 ,taipei103  ,taipei104,taipei105,taipei106,taipei107)
+
+taipei98new<-datagenerator(taipei98)
+taipei99new<-datagenerator(taipei99)
+taipei100new<-datagenerator(taipei100)
+taipei101new<-datagenerator(taipei101)
+taipei102new<-datagenerator(taipei102)
+taipei103new<-datagenerator(taipei103)
+taipei104new<-datagenerator(taipei104)
+taipei105new<-datagenerator(taipei105)
+taipei106new<-datagenerator(taipei106)
+taipei107new<-datagenerator(taipei107)
+
+taipeilist <- list( taipei98new  ,taipei99new ,taipei100new ,taipei101new ,taipei102new ,taipei103new  ,taipei104new,taipei105new,taipei106new,taipei107new )
+dim(taipei98new)[1]
+dim(taipei98new)[2]
+
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+AA <- matrix(unlist(taipeilist[1]),nrow=12) #構想
+
+apply(matrix(unlist(taipeilist[1]),nrow=12),2,sum) #check
+apply( taipei98new,2,sum) #check
+ 
+Q <- unlist(taipeilist) %>%array(dim=c(12,10,10)) #另類絲路 以後或許可用
+matrixuse=matrix(nrow=10,ncol=10)
+for(i in 1:10){
+  
+  matrixuse[i,]<- apply(matrix(unlist(taipeilist[i]),nrow=12) ,2,sum)
+  
+} 
+namecol <- colnames(taipei98new)
+namerow <- seq(98,107,1)
+datause <- data.frame(matrixuse)
+
+colnames(datause) <- namecol
+rownames(datause) <- namerow
+
+```
+
