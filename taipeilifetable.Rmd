@@ -24,24 +24,24 @@ require(dplyr)
 require(data.table)
 library(readxl)
 
-taipei98 <- read_excel("~/GitHub/master/data/taipei/taipei95.xls",col_names = FALSE)
+taipei98 <- read_excel("~/GitHub/master/data/taipei/taipei98.xls",col_names = FALSE)
 
-taipei99 <- read_excel("~/GitHub/master/data/taipei/taipei96.xls",col_names = FALSE)
-taipei100 <- read_excel("~/GitHub/master/data/taipei/taipei97.xls",col_names = FALSE)
+taipei99 <- read_excel("~/GitHub/master/data/taipei/taipei99.xls",col_names = FALSE)
+taipei100 <- read_excel("~/GitHub/master/data/taipei/taipei100.xls",col_names = FALSE)
 
-taipei101 <- read_excel("~/GitHub/master/data/taipei/taipei98.xls",col_names = FALSE)
+taipei101 <- read_excel("~/GitHub/master/data/taipei/taipei101.xls",col_names = FALSE)
 
-taipei102 <- read_excel("~/GitHub/master/data/taipei/taipei99.xls",col_names = FALSE)
+taipei102 <- read_excel("~/GitHub/master/data/taipei/taipei102.xls",col_names = FALSE)
 
-taipei103 <- read_excel("~/GitHub/master/data/taipei/taipei100.xls",col_names = FALSE)
+taipei103 <- read_excel("~/GitHub/master/data/taipei/taipei103.xls",col_names = FALSE)
 
-taipei104 <- read_excel("~/GitHub/master/data/taipei/taipei101.xls",col_names = FALSE)
+taipei104 <- read_excel("~/GitHub/master/data/taipei/taipei104.xls",col_names = FALSE)
 
-taipei105 <- read_excel("~/GitHub/master/data/taipei/taipei102.xls",col_names = FALSE)
+taipei105 <- read_excel("~/GitHub/master/data/taipei/taipei105.xls",col_names = FALSE)
 
-taipei106 <- read_excel("~/GitHub/master/data/taipei/taipei103.xls",col_names = FALSE)
+taipei106 <- read_excel("~/GitHub/master/data/taipei/taipei106.xls",col_names = FALSE)
 
-taipei107 <- read_excel("~/GitHub/master/data/taipei/taipei104.xls",col_names = FALSE)
+taipei107 <- read_excel("~/GitHub/master/data/taipei/taipei107.xls",col_names = FALSE)
 
 X<-taipei98[-c(1,2,3),]
 colnames(X) <- c(X[1,] )
@@ -78,8 +78,10 @@ Y <- X[,-c(2,3)]
 Z <- cbind(Y,X[,c(1,2)])
 return(X)
 }
-A <- c(taipei98  ,taipei99 ,taipei100 ,taipei101 ,taipei102 ,taipei103  ,taipei104,taipei105,taipei106,taipei107)
-
+B[1]
+A <- list(taipei98  ,taipei99 ,taipei100 ,taipei101 ,taipei102 ,taipei103  ,taipei104,taipei105,taipei106,taipei107)
+B <- lapply(A, datagenerator   ) #感謝燕萍
+datagenerator(A[[1]])
 taipei98new<-datagenerator(taipei98)
 taipei99new<-datagenerator(taipei99)
 taipei100new<-datagenerator(taipei100)
@@ -99,7 +101,7 @@ dim(taipei98new)[2]
 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
 ```{r}
 AA <- matrix(unlist(taipeilist[1]),nrow=12) #構想
 

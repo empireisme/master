@@ -1,0 +1,320 @@
+---
+title: "iosapp"
+author: "Chen Ning Kuan"
+date: "2020/3/11"
+output:
+  html_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE) 
+library(readr)
+require(ggplot2)
+require(stringr)
+options(scipen = 999)
+library(tidyverse)
+require(DT)
+require(ranger)
+require(GGally)
+require(AER)
+require(rminer)
+require(jiebaR)
+```
+
+```{r  warning=FALSE ,results='hide',include = FALSE}
+ios <- read_csv("C:/Users/User/Desktop/AppleStore.csv")
+dff<- ios
+ios <- ios[,-c(1,2,3,5,11)]
+```
+
+#一 變數介紹:
+
+- 我們有16個變數，包含
+
+- "id" : App ID
+
+- "track_name": App Name
+
+- "size_bytes": Size (in Bytes)
+
+- "currency": Currency Type
+
+- "price": Price amount
+
+- "ratingcounttot": User Rating counts (for all version)
+
+- "ratingcountver": User Rating counts (for current version)
+
+- "user_rating" : Average User Rating value (for all version)
+
+- "userratingver": Average User Rating value (for current version)
+
+- "ver" : Latest version code
+
+- "cont_rating": Content Rating 適合哪個年齡層使用 有4個level
+
+分別是 4+,9+,12+,17+
+
+- "prime_genre": Primary Genre 
+
+- "sup_devices.num": Number of supporting devices
+
+- "ipadSc_urls.num": Number of screenshots showed for display "可以視為功能的展現"
+
+- "lang.num": Number of supported languages
+
+- "vpp_lic": Vpp Device Based Licensing Enabled
+
+備註:
+Apple批量購買計劃（VPP）是一項服務，允許已註冊Apple VPP的組織批量購買iOS應用，但不能以折扣價購買。主要應該是用於企業的大量購買，此變數為二元變數
+
+#二 變數處理方式
+
+  其中id ,app name 都沒包含有用的資訊，而所有app都使用美金計價，ver(版本)部分由於各家版本號過於凌亂所以也予以刪除。
+
+  是故我只留下12個變數，其中又只有prime_genre,vpp_lic,cont_rating和是屬於類別型變數，其他變數都是連續型
+
+  然後新增一個虛擬變數為付費與否
+  
+另外由於bytes並非常用的單位，是故把它轉換成MB
+
+非常可惜的是並沒有公布APP的下載量
+
+
+```{r}
+charge<- as.factor(ifelse( ios$price>0,"paid","free"  ))
+ios[,13] <- charge
+
+ios<- ios %>% rename(charge=V13)
+
+ios$cont_rating <- as.factor(ios$cont_rating )
+ios$prime_genre <- as.factor(ios$prime_genre  )
+ios$size_MB <- ios$size_bytes/1000000
+ios <- ios[,-1]
+
+
+```
+
+
+這裡可以看出所有的資料，至此我們總共有13個變數外加7197個觀察值，我們的資料沒有任何遺漏值
+
+秀出我們有的所有資料
+
+```{r}
+
+DT::datatable(ios, options = list(
+pageLength=50, scrollX='400px'), filter = 'top')
+
+#any NA in data.frame
+sum(is.na.data.frame(ios))
+
+
+```
+
+秀出我們的變數的敘述統計
+
+```{r}
+m<- summary(ios)
+
+knitr::kable(m)
+
+```
+
+
+#三 資料視覺化
+
+##3.1 畫出correlation matrix
+
+```{r}
+library(corrplot)
+df<- ios[,-c(6,7,12)]
+df <- as.matrix(df)
+M<- cor(df)
+
+corrplot(M, method="circle")
+corrplot(M, method="number")
+```
+
+可以看出變數之間除了目前的user rating和所有版本的user rating外，其餘變數之間並無線性關係
+
+##3.2 大部分APP的使用年齡
+
+```{r}
+m1<- table(ios$cont_rating)
+
+table(ios$cont_rating)
+ios$cont_rating <- factor(ios$cont_rating,levels = c("4+", "9+", "12+", "17+"))
+m1<- table(ios$cont_rating)
+barplot(m1)
+
+knitr::kable(m1)
+
+```
+
+可以看出大部分的APP都是設計出來給4歲以上使用即可
+
+
+
+#四 感興趣的問題
+
+1.哪些變數會影響APP的評分?
+
+2.付費軟體的評分有比較好嗎?
+
+3.大部分的APP的定價趨勢為何?
+
+
+##4.1 哪些變數會影響APP的評分?
+
+###4.1.1先使用簡單的線性回歸來看
+
+```{r}
+m1 <- lm(user_rating   ~. ,ios)
+m2<- summary(m1)
+
+data.frame(summary(m1)$coef[summary(m1)$coef[,4] <= .05, 4])
+```
+
+###4.1.2 使用隨機森林來看哪些變數影響rating
+
+```{r}
+set.seed(1)
+
+rf<- ranger(user_rating~. ,ios, quantreg = TRUE,importance='impurity')
+```
+
+
+```{r}
+
+
+rf$variable.importance %>% 
+  as.matrix() %>% 
+  as.data.frame() %>% 
+  add_rownames() %>% 
+  `colnames<-`(c("varname","imp")) %>%
+  arrange(desc(imp)) %>% 
+  top_n(25,wt = imp) %>% 
+  ggplot(mapping = aes(x = reorder(varname, imp), y = imp)) +
+  geom_col() +
+  coord_flip() +
+  ggtitle(label = "Top 12 important variables") +
+  theme(
+    axis.title = element_blank()
+  )
+
+
+```
+
+從隨機森林的結果可以發現影響使用者目前rating的前三名變數分別是
+
+
+
+##4.2 付費軟體的評分有比較好嗎?
+
+```{r}
+qplot(user_rating, data = ios, geom = "density",
+  fill = charge, alpha = I(.5),
+  main="Distribution of App rating",
+  xlab="Rating",
+  ylab="Density")
+
+mean(ios$user_rating)
+
+mean(ios$user_rating[which(ios$V13=="paid"       )])
+mean(ios$user_rating[which(ios$V13=="free"       )])
+
+
+
+```
+
+所有APP的平均評分為3.526956，付費APP的評分為3.720949，免費APP為3.376726
+
+```{r}
+# Compute the analysis of variance
+res.aov <- aov(user_rating ~ charge, data = ios)
+# Summary of the analysis
+summary(res.aov)
+```
+
+one_way anova table也告訴我們，如果評分代表著APP的品質的話，那麼付費APP確實在統計上品質顯著大於免費APP
+
+##4.3大部分的APP的定價趨勢為何? 
+
+```{r}
+
+sum(is.na(ios$price))
+#there is no NA in price
+#we draw the ecdf of this data
+
+plot(ecdf(ios$price  ))
+object<- table(ios$price  )
+barplot(log(object))
+#plot(sort(unique(applestore$price)) ,log(object)     )
+
+#log(table(applestore$price  ))
+#qplot(price,data=applestore,geom="histogram"     )
+
+#qplot(price,data=applestore,geom="histogram",log = "y")
+
+#plot(applestore$price, log="y", type='histogram')
+```
+
+APP的訂價顯然是免費居多，而且訂價有指數分布的趨勢存在
+
+
+## 4.4哪些因素影響APP定價
+
+```{r}
+fm.tobit <- tobit(price~.-cont_rating-charge-prime_genre,
+data = ios)
+
+summary(fm.tobit)
+
+#colnames(ios)
+
+#這個可以向老師報告 要看wooldrige 的教科書
+
+fm.tobit$scale
+
+exp(2.257355544)
+
+
+require(AER)
+require(wooldridge)
+require(npsf)
+data(mroz)
+names(mroz)
+fm.tobit <- tobit(hours~nwifeinc+educ+exper+I(exper^2)+age+kidslt6+kidsge6,
+data = mroz)
+summary(fm.tobit)
+
+```
+
+文字雲的結果
+
+```{r}
+mixseg<-worker()
+
+seg <- mixseg[dff$track_name]
+segA<-data.frame(table(seg))
+
+segC<-data.frame(table(seg[nchar(seg)>1]))#data.frame
+segC_top50<-head(segC[order(segC$Freq,decreasing = TRUE),],50)
+
+library(wordcloud)
+par(family=("Heiti TC Light"))
+wordcloud(
+  words = segC_top50[,1], # 或segC_top50$Var1
+  freq =  segC_top50$Freq, 
+  scale = c(4,.1), # 給定文字尺寸的區間（向量）
+  random.order = FALSE,# 關閉文字隨機顯示 按順序
+  ordered.colors = FALSE,#關閉配色順序
+  rot.per = FALSE,#關閉文字轉角度
+  min.freq = 7,# 定義最小freq數字 
+  colors = brewer.pal(8,"Dark2")
+)
+```
+

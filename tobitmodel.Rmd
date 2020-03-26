@@ -1,0 +1,55 @@
+---
+title: "wooldrige_tobit"
+author: "Chen Ning Kuan"
+date: "2020年3月20日"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+handbyhand 手把手教你做出APE scale
+
+這是一個簡單的複製 複製出wooldridge大神的mroz的例子
+
+這一份筆記最大的用途在於
+
+教你如何手把手的複製出  APE scale, 這樣才能讓你用APE scale乘以報表的coef 這樣才能讓你和OLS做比較
+
+```{r    results = "hide",warning=FALSE}
+require(AER)
+require(wooldridge)
+require(npsf)
+data(mroz)
+names(mroz)
+
+```
+
+```{r}
+fm.tobit <- tobit(hours~nwifeinc+educ+exper+I(exper^2)+age+kidslt6+kidsge6,
+data = mroz)
+summary(fm.tobit)
+fm.tobit$call
+#predict(fm.tobit,mroz)
+```
+
+
+```{r}
+
+x=data.frame(rep(1,753),mroz$nwifeinc,mroz$educ ,mroz$exper,mroz$exper^2,mroz$age,mroz$kidslt6,mroz$kidsge6   )
+
+x <- as.matrix(x) #要轉成矩陣才能運算
+
+###753這裡是樣本數
+###1122 是scale 也就是sigma hat
+
+mean(
+pnorm(x%*%
+fm.tobit$coefficients/1122, 0, 1)
+)
+#請參考w大神的教科書page 602第四行
+```
+
+0.5886645和wooldrige教科書的一樣
+

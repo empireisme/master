@@ -1,0 +1,365 @@
+---
+title: "taipeilifetable"
+author: "Chen Ning Kuan"
+date: "2019年3月7日"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r 讀資料 }
+options(digits = 5)
+setwd("~/GitHub/master/data/taiwan")
+library(readxl)
+require(survival)
+library(plyr)
+require(dplyr)
+require(data.table)
+library(readxl)
+require(KMsurv)
+library(survival)
+
+1
+taiwan102 <- read_excel("~/GitHub/master/data/taiwan/taiwan10203.xls",col_names = FALSE)
+
+taiwan107 <- read_excel("~/GitHub/master/data/taiwan/taiwan10703.xls",col_names = FALSE)
+
+X<-taiwan102[-c(1,2),]
+colnames(X) <- c(X[1,] )
+X <- X[-1,-c(seq(5,23,2))]
+xx <- apply(X[,c(2,3)],2,as.numeric)
+class(xx)
+Y <- X[,-c(1)]
+Y <- apply(Y,2,as.numeric)
+yy <- Y[,1:2]
+YY <- cbind(Y,yy)
+YY <- YY[,-c(1,2)]
+Z <- cbind(X[,1],YY)
+rownames(Z) <- Z[,1]
+Z <- Z[,-1]
+ZZ <- Z[,-c(11,12)]
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r }
+#datagenerator 此函數用來製造可用資料
+
+datagenerator=function(X){
+X<-X[-c(1,2),]
+colnames(X) <- c(X[1,] )
+X <- X[-1,-c(seq(5,23,2))]
+xx <- apply(X[,c(2,3)],2,as.numeric)
+class(xx)
+Y <- X[,-c(1)]
+Y <- apply(Y,2,as.numeric)
+yy <- Y[,1:2]
+YY <- cbind(Y,yy)
+YY <- YY[,-c(1,2)]
+Z <- cbind(X[,1],YY)
+rownames(Z) <- Z[,1]
+Z <- Z[,-1]
+ZZ <- Z[,-c(11,12)]
+return(Z)
+
+}
+
+datagenerator1=function(X){
+X<-X[-c(1,2),]
+colnames(X) <- c(X[1,] )
+X <- X[-1,-c(seq(5,23,2))]
+xx <- apply(X[,c(2,3)],2,as.numeric)
+class(xx)
+Y <- X[,-c(1)]
+Y <- apply(Y,2,as.numeric)
+yy <- Y[,1:2]
+YY <- cbind(Y,yy)
+YY <- YY[,-c(1,2)]
+Z <- cbind(X[,1],YY)
+rownames(Z) <- Z[,1]
+Z <- Z[,-1]
+ZZ <- Z[,-c(11,12)]
+return(ZZ)
+}
+
+taiwan102new<-datagenerator1(taiwan102)
+
+taiwan107new<-datagenerator1(taiwan107)
+
+
+dim(taiwan102new)[1]
+dim(taiwan102new)[2]
+
+taiwan102new[,2]=taiwan102new[,1]+taiwan102new[,2]
+taiwan102new <- taiwan102new[,-1] #合併小於一歲的人
+
+taiwan107new[,2]=taiwan107new[,1]+taiwan107new[,2]
+taiwan107new<- taiwan107new[,-1] #合併小於一歲的人
+
+taiwan<- rbind(  taiwan102new,taiwan107new )
+
+```
+
+```{r}
+conditionalsurvival=function(x,y){
+ans <- matrix(0,nrow=nrow(x),ncol=5)
+ 
+for (  i in 1:nrow(x)  )
+{
+   
+   for( j in 1:4)
+   {
+    ans[i,j] <-  (x[i,j]-y[i,j+1])/x[i,j]
+     
+     
+   }
+ans[i,5] <- (sum( x[i,5:9])-sum( x[i,6:9]))/sum(x[i,5:9])  
+}
+   
+  return(ans)
+   
+}
+  
+cond_hazard <- conditionalsurvival(  taiwan102new,taiwan107new )
+rowname <- rownames(taiwan102new)
+rownames(cond_hazard ) <- rowname
+
+
+colnames(cond_hazard)<-c(
+"P(5<T<10/0<T<10)","P(10<T<15/5<T<15)","P(15<T<20/10<T<20)",
+"P(20<T<25/20<T<25)","P(T>25/T>20)")
+
+```
+
+```{r}
+
+apply
+
+#用在只有一個城市時好用
+conditionalsurvival2=function(x){
+ans <- matrix(nrow=3,ncol=5)
+for(i in 1:4){
+       ans[1,i] <- (x[1,i]-x[2,i+1])/x[1,i]
+       ans[2,i] <- (x[1,i]-x[2,i+1])
+       ans[3,i] <- x[1,i]
+  }
+  ans[1,5] <- (sum( x[1,5:9])-sum( x[2,6:9]))/sum(x[1,5:9])
+  ans[2,5] <- (sum( x[1,5:9])-sum( x[2,6:9]))
+  ans[3,5] <- sum(x[1,5:9])
+  rownames(ans) <- c(" hazrdate","death","alive"      )
+  return(ans)
+}
+taipei03 <-  taiwan[c(3,26),]
+taipei03_hazard <- conditionalsurvival2(taipei03)
+
+t <- 1-taipei03_hazard[1,]
+
+my_km_shat=function(x){
+  
+  m <- length(x)
+  ans <- numeric(m)
+  for(i in 1:m){
+   ans[i]  <- prod(x[1:i])
+    
+  }
+  return(ans)
+}
+t
+s_taipei<- my_km_shat(t)
+d_taipei <- taipei03_hazard[2,]
+n_taipei <- taipei03_hazard[3,]
+prod(t)#check
+
+```
+
+```{r}
+my_km_shat_var=function(s,d,n){
+m <- length(s)
+ans <- numeric(m)
+temp <- numeric(m)
+for(i in 1:m){
+temp[i]<- d[i]/(n[i]*(n[i]-d[i]))
+}
+for(i in 1:m){
+ ans[i]<-(s[i]^2)*(sum(temp[1:i]))
+}
+return(ans)
+}
+var_shat<- my_km_shat_var(s_taipei,d_taipei,n_taipei)
+
+nonpartaipei <- rbind(s_taipei,var_shat)
+
+```
+
+```{r}
+Yi <- c(  7.5,12.5,17.5,22.5,37.5)*n_taipei
+mleforexp <- sum(d_taipei)/ sum(Yi  )
+rexp(5,0.9)
+
+sample <- rexp( sum(n_taipei)  , rate =mleforexp   )
+hist(sample)
+
+sample2 <- rexp( sum(n_taipei)  , rate = 0.98)
+hist(sample2)
+
+seq(0,   ) 
+```
+
+
+```{r}
+data(tongue); attach(tongue)
+my.surv <- Surv(time[type==1], delta[type==1])
+survfit(my.surv, conf.int = 0.95, conf.type = "log")
+survfit(formula = my.surv)
+
+data(aml)
+fit <- survfit(Surv(time, status) ~ x, data=aml)
+plot(fit)
+
+# plot only 1 of the 2 curves from above
+plot(fit[2])
+
+
+#fit a cox proportional hazards model and plot the 
+#predicted survival curve
+data(ovarian)
+fit <- coxph( Surv(futime,fustat)~resid.ds+rx+ecog.ps,data=ovarian)
+plot( survfit( fit))
+```
+開始造nonparematric method
+
+```{r   }
+datause[,2]=datause[,1]+datause[,2]
+
+datause <- datause[,-1] #合併小於一歲的人
+
+conditionalsurvival=function(x){
+
+  ans <- matrix(nrow=3,ncol=5)
+  for(i in 1:4){
+    
+       ans[1,i] <- (x[1,i]-x[2,i+1])/x[1,i]
+       ans[2,i] <- (x[1,i]-x[2,i+1])
+       ans[3,i] <- x[1,i]
+  }
+  ans[1,5] <- (sum( x[1,5:9])-sum( x[2,6:9]))/sum(x[1,5:9])
+  ans[2,5] <- (sum( x[1,5:9])-sum( x[2,6:9]))
+  ans[3,5] <- sum(x[1,5:9])
+
+  
+  
+  
+  return(ans)
+}
+
+cond_hazard <- conditionalsurvival(datause)
+
+cond_hazard[1:3,3] <- 0
+
+cond_hazard
+
+
+
+```
+
+
+
+```{r}
+st_hat <- function(x,t){
+  
+  ans <- sum(x>t)/length(x)
+  
+  return(ans)
+  }
+
+
+st_hat_total=function(x){ #想問同學 ㄧ有沒有更有效率的寫法 類似list comprehension
+  
+ans <-numeric(length(x))
+  
+  for(i in 1:length(x)){
+    
+    ans[i]<- st_hat(x,x[i])
+  
+  
+  }
+return(ans)
+}
+```
+
+```{r}
+xx <- c( 7.5  ,12.5,17.5,22.5  ,37.5    )
+
+m <- cond_hazard[2,]
+
+runif(m[1],min=5,max=10 )
+runif(m[2],min=10,max=15 )
+runif(m[3],min=15,max=20 )
+runif(m[4],min=20,max=25 )
+runif(m[5],min=25,max=50 )
+data <- c( runif(m[1],min=5,max=10 ),
+runif(m[2],min=10,max=15 ),
+runif(m[4],min=20,max=25 ),
+runif(m[5],min=25,max=50 ) )
+sort(c(5,6,7,1,3))
+data <- sort(data)
+length(data)
+
+```
+```{r}
+
+x=seq(1,7,2)
+
+cum=function(x){
+  
+  m<- length(x)
+  ans <- numeric(m)
+  for(i in 1:m){
+    
+    ans[i] <- sum(x[1:i])
+    
+    
+  }
+  return(ans)
+}
+prod(x)
+
+cum1=function(x){
+  
+   m<- length(x)
+  ans <- 1
+  for(i in 1:m){
+    
+    ans <- ans*x[i]
+    
+    
+  }
+  return(ans)
+  
+}
+cum1(x)
+
+```
+
+
+```{r}
+
+x <- data
+
+
+y <- st_hat_total(data)
+
+length(y)
+plot(x,y,type="n") 
+segments(x[-length(x)],y[-length(x)],x[-1],y[-length(x)]) 
+points(x[-length(x)],y[-length(x)],pch=16) 
+points(x[-1],y[-length(x)],pch=1) 
+plot(x,y,type="s") 
+st_hat_total(m)
+```
+

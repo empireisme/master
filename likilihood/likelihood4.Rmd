@@ -1,0 +1,145 @@
+---
+title: "likelihood "
+author: '陳寧寬'
+date: '2019-03-06'
+output:
+  pdf_document:
+    includes:
+      in_header: header.tex
+    latex_engine: xelatex
+  html_document:
+    df_print: paged
+---
+
+wooldridge\\
+
+標準的right censored 和 failure time 問題
+
+$$  t_i=min(t_i^* ,c_i   )  $$
+
+$t_i$代表觀察到的期間\\
+$t_i^*$ 代表真實存活時間\\
+$c_i$  代表censored time\\
+
+我們去建構likilihood 時應該使用$t_i$,因為這才是觀察的到的
+
+
+$$  \sum_{i=1}^n \Bigl\{   d_i log[f(t_i|x_i;\theta) +(1-d_i)log[1-F(t_i|x_i;\theta)]-log[1-F(b-a_i|x_i;\theta)]      \Bigr\} $$
+
+in my opinion\\
+
+$$  \prod_{i \in R}(  1-F_i(C_r|x_i;\theta)) \prod_{i \in I}\Bigl\{ 
+( 1-F_i(L_i|x_i;\theta))-(  1-F_i(R_i|x_i;\theta))  \Bigr\} $$
+
+在此處di=1 代表right censored di=0 代表 interval censored\\
+
+$$    \sum_{i=1}^n   \Bigl\{d_i log( 1-F_i(C_i|x_i;\theta) )+          (1-d_i) log \bigl\{ F_i(R_i|x_i;\theta)-F_i(L_i|x_i;\theta)   \bigr\}  \Bigr\}               $$
+
+simulation 的設定
+
+
+
+
+從民國52年開始生成資料，每年都蓋100戶房子
+
+觀察那些民國102年還健在的房子，然後去紀錄他們民國107年的情形
+
+民國107年還健在的就是right cenosred 不在的就是interval censored
+
+step1 先判斷房子在102年還有沒有活著
+
+民國52年蓋的房子去扣掉50
+民國53年蓋的房子去扣掉49
+
+```{r,results='asis'}
+
+
+```
+
+```{r}
+set.seed(2018)
+lamda=0.05
+n=5
+y=50
+A <- rexp(n*y,rate = lamda)
+#hist(A,probability = T,breaks =15 )
+data <- matrix(A,nrow=y,ncol=n)
+data[1,]-50
+
+data102 <- matrix(0,nrow=y,ncol=n  )
+for(i in 1:y){
+  c=51-i
+ data102[i,] <- data[i,]-c
+  
+}
+ind<- which(data102>=0)
+datanew <- matrix(0,nrow=y,ncol=n  )
+data102alivelife=matrix
+datanew[ind] <- data[ind]
+data102alivelife <- datanew #在102年活著的樣本的壽命
+#data102aliveyear <-         #在102年活著的樣本的年紀
+
+
+```
+
+```{r}
+data107 <- matrix(0,nrow=y,ncol=n  )
+
+for(i in 1:y ){
+  c=56-i
+ data107[i,] <- data[i,]-c
+  
+}
+data[1,]-55
+ind2<- which(data107>=0)
+datanew2 <- matrix(0,nrow=y,ncol=n  )
+data107alivelife=matrix
+datanew2[ind2] <- data[ind2]
+data107alivelife <- datanew2
+
+
+```
+
+
+```{r}
+
+ind102<- ind
+ind107<- ind2
+data107alivelife-data102alivelife
+ind_dead <- setdiff(ind,ind2) 
+
+
+```
+
+```{r}
+ind2<- which(data107>=0)
+datanew2 <- matrix(0,nrow=y,ncol=n  )
+datanew2[ind2] <- data[ind2]
+datanew2[ind2] <- data102alivelife[ind2]
+```
+
+
+
+
+```{r}
+set.seed(2018)
+lamda=0.05
+n=10
+y=50
+A <- rexp(n*y,rate = lamda)
+#hist(A,probability = T,breaks =15 )
+data <- matrix(A,nrow=y,ncol=n)
+data[1,]-50
+data102 <- matrix(0,nrow=y,ncol=n  )
+for(i in 1:y){
+  c=51-i
+ data102[i,] <- data[i,]-c
+}
+data102alive <- data102[which(data102>=0)]
+data107 <- data102alive-5
+data107alive <- data107[which(data107>=0)]
+data107death <- data107[which(data107<0)]
+data107alivereal <- data107alive+55
+data107deathreal <- data107death+55
+```
+

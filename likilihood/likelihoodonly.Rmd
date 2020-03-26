@@ -1,0 +1,191 @@
+---
+title: "likelihood "
+author: '陳寧寬'
+date: '2019-03-06'
+output:
+  pdf_document:
+    includes:
+      in_header: header.tex
+    latex_engine: xelatex
+  html_document:
+    df_print: paged
+---
+
+wooldridge\\
+
+標準的right censored 和 failure time 問題
+
+$$  t_i=min(t_i^* ,c_i   )  $$
+
+$t_i$代表觀察到的期間\\
+$t_i^*$ 代表真實存活時間\\
+$c_i$  代表censored time\\
+
+我們去建構likilihood 時應該使用$t_i$,因為這才是觀察的到的
+
+在此處di=1 代表right censored di=0 代表 interval censored\\
+
+站在102年的角度下
+
+對0-5歲的樣本
+
+$$\frac{ [ F(10)-F(0)]^{d_i}[1-F(5)]^{1-d_i} }{ 1-F(0)}$$
+
+對5-10歲的樣本
+
+$$\frac{ [ F(15)-F(5)]^{d_i}[1-F(10)]^{1-d_i} }{ 1-F(5)}$$
+
+對10-15歲的樣本
+
+$$\frac{ [ F(20)-F(10)]^{d_i}[1-F(15)]^{1-d_i} }{ 1-F(10)}$$
+
+對15-20歲的樣本
+
+$$\frac{ [ F(25)-F(15)]^{d_i}[1-F(20)]^{1-d_i} }{ 1-F(15)}$$
+
+對20-25歲的樣本
+
+$$\frac{ [ F(30)-F(20)]^{d_i}[1-F(25)]^{1-d_i} }{ 1-F(20)}$$
+
+對25以上歲的樣本
+
+$$\frac{ [ F(100)-F(25)]^{d_i}[1-F(30)]^{1-d_i} }{ 1-F(25)}$$
+
+simulation 的設定
+
+
+從民國52年開始生成資料，每年都蓋100戶房子
+生到民國102年
+
+觀察那些民國102年還健在的房子，然後去紀錄他們民國107年的情形
+
+民國107年還健在的就是right cenosred 不在的就是interval censored
+
+step1 先判斷房子在102年還有沒有活著
+
+民國52年蓋的房子去扣掉50
+民國53年蓋的房子去扣掉49
+
+```{r,results='asis'}
+
+```
+
+```{r}
+
+lamda=0.05
+n=100
+y=50
+A <- rexp(n*y,rate = lamda)
+#hist(A,probability = T,breaks =15 )
+data <- matrix(A,nrow=y,ncol=n)
+data102 <- matrix(0,nrow=y,ncol=n  )
+for(i in 1:y){
+  c=51-i
+ data102[i,] <- data[i,]-c
+  
+}
+ind<- which(data102>=0)
+datanew <- matrix(0,nrow=y,ncol=n  )
+data102alivelife=matrix
+datanew[ind] <- data[ind]
+data102alivelife <- datanew #在102年活著的樣本的壽命
+#data102aliveyear <-         #在102年活著的樣本的年紀
+
+```
+
+```{r}
+data107 <- matrix(0,nrow=y,ncol=n  )
+
+for(i in 1:y ){
+  c=56-i
+ data107[i,] <- data[i,]-c
+  
+}
+
+ind2<- which(data107>=0)
+datanew2 <- matrix(0,nrow=y,ncol=n  )
+data107alivelife=matrix
+datanew2[ind2] <- data[ind2]
+data107alivelife <- datanew2
+
+```
+
+```{r}
+ind102<- ind
+ind107<- ind2
+ind_dead <- setdiff(ind,ind2) 
+
+```
+
+```{r}
+data102year=matrix(0,nrow=y,ncol=n  )
+for(i in 1:y){
+c=51-i 
+for(j in 1:n)
+{
+if(data102alivelife[i,j]>0){
+data102year[i,j]=c
+}  
+}
+}
+
+```
+
+```{r}
+data107year=matrix(0,nrow=y,ncol=n  )
+for(i in 1:y){
+c=56-i 
+for(j in 1:n)
+{
+if(data107alivelife[i,j]>0){
+data107year[i,j]=c
+}  
+}
+}
+#data107year 為107年尚健在的建物的年齡
+#data102year 為102年尚健在的建物的年齡
+
+```
+
+```{r}
+
+data107v <- data107year[which(data107year>0)]
+
+data102v <- data102year[which(data102year>0)]
+
+
+```
+
+```{r}
+require(dplyr)
+require(reshape2)
+
+gentable=function(a){
+a1<-melt(table(cut(a,breaks=seq(0,100,5) )))
+a2<-data.frame(sapply(a1,function(x) gsub("\\(|\\]","",gsub("\\,","-",x))))
+colnames(a2)<-c("numbers","Freq")
+return(a2)  
+}
+data102table <- gentable(data102v)
+data107talbe <- gentable(data107v)
+A <- rbind(  t(data102table),t(data107talbe))
+B <- A[-3,]
+rownames(B)<-c("year","102","107  ")
+
+
+```
+
+```{r}
+require(data.table)
+a <- as.numeric(B[2,])
+b <-as.numeric(B[3,])
+c<- B[1,]
+class(a)
+d <- data.table(cbind(  c,a,b   ))
+
+View(B)
+
+```
+
+
+

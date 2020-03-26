@@ -1,0 +1,407 @@
+---
+title: "INE approach"
+author: "Chen Ning Kuan"
+date: "2019/11/29"
+output:
+  html_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+options(digits=4)
+getwd()
+require(survival)
+require(interval)
+require(MixtureRegLTIC)
+warnings('off')
+warnings('off')
+library(knitr)
+```
+
+#1 Monte Carlo Simulations
+
+Our estimator $\widetilde{S}(x)$ is computed from INE(Iterative Nelson Estimator) approach,you can see the approach method in section2.we now asses their performane using Monte Carlo simulation
+
+
+## 1.1 Data generation process
+
+- step1:Xi and Ti are generated independenylt from the following distributions
+
+$$ Xi\stackrel{i.i.d}{\sim} Gamma( 2,1) \quad i=1,...,n    $$
+$$ Ti\stackrel{i.i.d}{\sim} Unif( 0,4) \quad i=1,...,n    $$
+
+$$ n=100\quad sample \ size  $$
+
+- step2:If $Xi <Ti$, this observation is ignored.Otherwise,if  $Xi<Ti+0.5$,we get an observation lies between two examination,say $[Ti,Ti+0.5)$;else it is right cenosred at $Ti+0.5$ 
+
+Thus,we only know that $Li<=Xi<=Ui$ iff $Xi>=Ti$.It is possible that $Ui= \infty$
+
+Write a function called "samplemaker_gamma" to make sample
+
+```{r samplemaker_gamma     }
+
+samplemaker_gamma <- function(n=100,shape=2,scale=1,end=4 ){
+x <- rgamma(n,shape = 2,scale = 1)
+t <- runif(n,0,4)
+delta <- 0.5
+M <- 1
+observedx <- x[which(x>t)] 
+observedt <- t[which(x>t)] 
+data <- data.frame(observedx,observedt)
+status <- ifelse( observedx<=observedt+M*delta, 3  , 0) #maybe change
+qi <- ifelse(status==3,  observedt  ,observedt+M*delta   )
+pi <- ifelse( status==3,  observedt+M*delta ,  Inf                 )
+datause <- data.frame(observedx,observedt ,Li=qi,Ui=pi,status,entry=observedt)
+return(datause)
+}
+
+```
+
+
+```{r}
+samplemaker_weibull<- function(n=130,shape=4,scale=1,end=1.5 ){
+#n <- 500
+#shape <- 4
+#scale <- 1
+x <- rweibull(n,shape,scale)
+t <- runif(n,0,end)
+delta <- 0.5
+M <- 1
+observedx <- x[which(x>t)] 
+observedt <- t[which(x>t)] 
+status <- ifelse( observedx<=observedt+M*delta, 3  , 0) #maybe change
+qi <- ifelse(status==3,  observedt  ,observedt+M*delta   )
+pi <- ifelse( status==3,  observedt+M*delta ,  Inf  )
+datause <- data.frame(observedx,observedt ,Li=qi,Ui=pi,status,entry=observedt)
+return(datause)
+}
+
+
+```
+
+
+
+## 1.2 Simulation procedure
+
+- Try n=100
+- Number of replications R=500
+- In each replication:
+
+    - Estimate $S(x)$ by INE approach
+- Compute the mean of  $\widetilde{S}(x)$ and its lower and upper 5% quantiles of the estimates
+- Draw the true Survival function of Xi and the mean of  $\widetilde{S}(x)$ and its lower and upper 5% quantiles of the estimates 
+
+#2 INE approach
+
+Our INE approach includes 5 step:
+
+- step 1:To construct the estimator $\widetilde{S}(x)$ , let 
+$0 = \tau_0 <  \tau_1 < \tau_2 < ...< \tau_m$ be a grid of time which includes all the points $Li,Ui$ from data.Thus,we have m interval.This method is maded by Giolo. 
+
+- step 2:For i=1,...,n. For the ith observation, define a
+weight $\alpha_{ij}$ to be $1$ if the interval $(\tau_{j-1},\tau_{j}]$
+is contained in the interval $(L_i,U_i]$ and 0,otherwise. 
+
+- step 3:Let $r=0$;give an intitila estimate $\widetilde{S}^{(0)}$ of the survival function
+
+- step 4:Under the current estimate of the survival function $\widetilde{S}^{(r)}$, compute $d_j$ , the expected
+number of deaths in each interval as in Turnbull’s self-consistency algorithm. Let $R_j=\sum_{i\geq j}d_i$
+
+$$ p_j=S(\tau_{j-1})^-S(\tau_{j})\quad j=1,...,m$$
+
+$$ d_j=\sum_{i=1}^{n}\frac{\alpha_{ij}p_j}{\sum_{k=1}^{m}\alpha_{ik}p_k}\quad j=1,...,m$$
+
+- step 5:Estimate the hazard increment in each interval as $\widetilde{\lambda}_j=\frac{ d_j }{R_j}$ , then the cumulative hazard function is estimated by $\widetilde{\Lambda}(x)=\sum_{j:p_j\leq x}\widetilde{\lambda}_i$, and the new survival function estimate is$\widetilde{S}^{(r+1)}(x)=exp(-\widetilde{\Lambda}(x))$If $\widetilde{S}^{(r+1)}(x)$ and $\widetilde{S}^{(r)}(x)$ are close enough, stop;otherwise,let $r= r+1$ and go to Step 4.
+
+#3.Function for simulation 
+
+
+##3.1 show the datatest
+
+datatest is a test data (n=7)
+
+```{r}
+set.seed(5)
+datatest <- samplemaker_gamma(n=7)
+print("datatest")
+datatest
+
+```
+
+##3.2 Write a fucntion do step 1
+
+- step 1:To construct the estimator $\widetilde{S}(x)$ , let 
+$0 = \tau_0 <  \tau_1 < \tau_2 < ...< \tau_m$ be a grid of time which includes all the points $Li,Ui$ from data.Thus,we have m interval.This method is maded by Giolo. 
+
+```{r}
+
+cria.tau <- function(data){
+l <- data$Li
+r <- data$Ui
+tau <- sort(unique(c(l,r[is.finite(r)])))
+#tau <- c( 0,tau,100000)
+return(tau)
+}
+
+```
+
+```{r}
+print("tau")
+cria.tau( datatest )
+```
+
+write a fucntion do step 1 continue
+
+```{r}
+makeinterval <- function(data){
+x <- matrix( c(0,rep(cria.tau( data ),rep(2,length( cria.tau( data )  ))) ,100000 )
+,ncol = 2 ,byrow = T)
+q <- x[,1]
+p <- x[,2]
+data.frame(q,p)
+}
+
+```
+
+we show the interval in datatest 
+```{r}
+makeinterval(datatest)
+```
+
+##3.3 Write a fucntion do step 2
+
+- step 2:for i = 1, . . . , n. For the ith observation, define a
+weight $\alpha_{ij}$ to be $1$ if the interval $(\tau_{j-1},\tau_{j}]$
+is contained in the interval $(L_i,U_i]$ and 0,otherwise. 
+
+```{r}
+
+make_A_turnbull <- function(datacheck){
+  qj<- makeinterval(datacheck)$q
+  pj<- makeinterval(datacheck)$p
+  li <- datacheck$Li
+  ri <- datacheck$Ui
+  n <- length(li)
+  m <- length(pj)
+  A <- matrix(0,nrow = n,ncol = m)
+  intmapL <- signif(qj,4)
+  intmapR <- signif(pj,4)
+  k <- dim(A)[[2]]
+  Lbracket <- rep("(", k)
+  Rbracket <- rep(")", k)
+  intname <- paste(Lbracket, intmapL, ",", intmapR, Rbracket, 
+  sep = "")
+  
+  intmapL2 <- signif(datacheck$Li, 4)
+  intmapR2 <- signif(datacheck$Ui, 4)
+  k2 <- dim(A)[[1]]
+  Lbracket2 <- rep("(", k2)
+  Rbracket2 <- rep(")", k2)
+  intname2 <- paste(Lbracket2, intmapL2, ",", intmapR2, Rbracket2, 
+  sep = "")
+  for(j in 1:m){
+    for( i in 1:n){
+      if( li[i]<=qj[j]&&ri[i]>=pj[j]      ){
+        A[i,j] <- 1
+      }
+      else{A[i,j] <- 0}
+    }
+  }
+ 
+colnames(A) <- intname
+rownames(A) <- intname2
+return(A)
+}
+
+```
+
+we show the corrsponding $\alpha_{ij}$ in datatest
+
+```{r}
+datatest_A <- make_A_turnbull(datatest)
+datatest_A
+```
+
+##3.4 Write a fucntion do  step 4 and step 5
+
+- step 4:Under the current estimate of the survival function $\widetilde{S}^{(r)}$, compute $d_j$ , the expected
+number of deaths in each interval as in Turnbull’s self-consistency algorithm. Let $R_j=\sum_{i\geq j}d_i$
+
+$$ p_j=S(\tau_{j-1})^-S(\tau_{j})\quad j=1,...,m$$
+
+$$ d_j=\sum_{i=1}^{n}\frac{\alpha_{ij}p_j}{\sum_{k=1}^{m}\alpha_{ik}p_k}\quad j=1,...,m$$
+
+- step 5:Estimate the hazard increment in each interval as $\widetilde{\lambda}_j=\frac{ d_j }{R_j}$ , then the cumulative hazard function is estimated by $\widetilde{\Lambda}(x)=\sum_{j:p_j\leq x}\widetilde{\lambda}_j$, and the new survival function estimate is$\widetilde{S}^{(r+1)}(x)=exp(-\widetilde{\Lambda}(x))$If $\widetilde{S}^{(r+1)}(x)$ and $\widetilde{S}^{(r)}(x)$ are close enough, stop;otherwise,let $r= r+1$ and go to Step 4.
+
+```{r}
+
+#data <- samplemaker_gamma()
+
+myfunction_turnbull<- function(data,iter.max=2000){
+
+A <- Aintmap(L= data$Li,R=data$Ui)$A
+tau <-Aintmap(L= data$Li,R=data$Ui)$intmap[2,] 
+#A
+s <- rep(   1/dim(A)[2],  dim(A)[2] )  #give initail guess
+eps=0.00001    #tolerance
+n<-nrow(A)     #number of observation
+m<-ncol(A)     #number of interval
+S=cumsum(s)
+S=S[m:1]
+#S
+Q<-matrix(1,m)
+#Q
+#length(S)
+#dim(A) 
+iter <- 0
+repeat {
+
+iter <- iter + 1
+diff<- (Q-S)
+#diff
+maxdiff<-max(abs(as.vector(diff)))
+#maxdiff
+
+if (maxdiff<eps|iter>=iter.max)
+  break
+Q <- S
+#Q
+#s
+#length(p)   
+#dim(A)
+#s
+den <- rep(0,n)
+densum <- rep(0,n)
+d<- rep(0,m)
+###compute expected death
+for(j in 1:m){   
+  
+for(i in 1:n){
+  
+  if(A[i,j]>0){
+  
+  den[i]<- sum(A[i,]*s)
+  densum[i]<- A[i,j]*s[j]/den[i]
+  d[j]<- sum( densum )
+  }
+}
+
+}
+
+###compute expected death
+#d
+
+Rj <-NULL
+for(j in 1:m){
+  
+ Rj [j]<- sum( d[j:m]   ) 
+}
+
+lamdatelta <- d/Rj
+#lamdatelta
+cumlatedhazard<- cumsum(lamdatelta)
+#cumlatedhazard
+S<-exp(-cumlatedhazard )
+#S
+SS<- S
+SS[m] <- 0
+
+#c(1,S[1:m-1])-SS
+
+s <- c(1,S[1:m-1])-SS
+#s
+#sum(s)
+S[1] <- 1
+S[m] <- 0
+}
+#tau
+c <- data.frame(tau,S)
+return(c)
+
+}
+
+```
+
+
+
+#4 simulation rusult
+
+##R=1 case
+```{r}
+
+b <- myfunction_turnbull(  samplemaker_gamma(n=100))
+plot(b$tau,b$S,type = "l",lty=2,c(0,5),xlab = "age",ylab="S(x)")
+x = seq(0, 5, 0.01)
+shape = 2
+rate = 1
+cdf2 = pgamma(x, shape, scale = 1)
+lines(x,1-cdf2)
+
+```
+
+```{r}
+a <- myfunction_turnbull(  samplemaker_weibull(  ))
+
+plot(a$tau,a$S,type = "l",lty=2,xlim = c(0,2),xlab = "age",ylab="S(x)")
+curve(exp(-(x/1)^4),from=0,to=2,add = T)
+
+```
+
+
+
+the function do the interpolation
+
+```{r   eval=FALSE }
+myexperiment_gamma=function(n=100 ){
+xout <- seq(0,5,0.01)
+data <- samplemaker_gamma(n)
+aa <- myfunction_turnbull(data)
+#plot(aa$tau,aa$S,type = "l",col="blue",lty=2)
+#lines(x,1-cdf,col="green")
+#length(aa$tau)
+#length(aa$p)
+approx_y <- approx(aa$tau,aa$S, xout=xout,yleft=1 ,yright=0 )
+approx_y <- approx_y$y
+#plot(xout,approx_y ,type = "l",col="blue",lty=2 )
+#lines(x,1-cdf,col="green")
+return(approx_y)
+}
+
+```
+
+##R=500 case
+```{r eval=FALSE}
+R=500
+x = seq(0, 5, 0.01)
+# Now define the parameters of your gamma distribution
+shape = 2
+rate = 1
+# Now calculate points on the cdf
+cdf = pgamma(x, shape, rate)
+# Shown plotted here
+x = seq(0, 5, 0.01)
+par(mfrow=c(1,1))
+xout <- seq(0,5,0.01)
+dd <- replicate(n=R, myexperiment_gamma(n=100 ))
+order <- t(apply(dd,1,sort))
+mean <- apply(order,1,mean)
+plot(xout,mean,type = "l",col="blue",lty=2,main="gamma(shape=2,sclae=1,R=500,n=100)",xlim = c(0,5),ylim = c(0,1))
+lines(x,1-cdf,col="green")
+lines(xout,order[,round(R*0.025)] , col="blue",lty=3  )
+#lines(xout,order[,round(R*0.2)] , col="blue",lty=3)
+lines(xout,order[,round(R*0.975)] , col="blue",lty=3  )
+
+```
+
+
+
+
+
+
+
+
+
