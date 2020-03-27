@@ -18,7 +18,7 @@ require(magrittr)
 library(readr)
 require(ggplot2)
 require(stringr)
-options(scipen = 999)
+options(scipen = 9)
 library(tidyverse)
 require(DT)
 require(ranger)
@@ -464,24 +464,20 @@ sum( table(datause2$Installs)  ) # just for check
 #ifelse(datause2$Installs<10000 ,"low" ,"medium"     ) 
 a<- datause2$Installs
 
-a<- as.data.frame(a)
-class(a)
-#a
+ordinal<- cut(a, c(-Inf,10000,1000000,Inf), c("low","medium","high"),right=T)
 
-for(i in 1:length(a)){
-  
-  if(1000000<=a){
-    
-    a[i]<-
-  }
-  
-  
-}
-a[which(1000000<=a),1] <- "high"
-a[which(a<10000),1]<-"low"
-a[which(10000<=a&a<1000000),1] <- "medium"
+datause2$ordinal <- ordinal
 
-a
-which(1000000<=a)
+df <- datause2[,-c( 1,4,8  )]
+#a[which(1000000<=a),1] <- "high"
+#a[which(a<10000),1]<-"low"
+#a[which(10000<=a&a<1000000),1] <- "medium"
+
+m <- polr(ordinal~ Price+Rating+size_mb+small_app, data = df, Hess=TRUE)
+summary(m)
+(ctable <- coef(summary(m)))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+(ctable <- cbind(ctable, "p value" = p))
+ctable
 ```
 

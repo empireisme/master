@@ -1,0 +1,45 @@
+---
+title: "Untitled"
+author: "Chen Ning Kuan"
+date: "2020年3月27日"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1.please remember to install the following packages!
+
+2.please put this file(rmd) and the googleplaystore.csv in the same folder
+
+```{r}
+require(jiebaR)
+require(wordcloud)
+getwd()
+data<- read_csv("googleplaystore.csv")
+datause<- data
+
+```
+
+```{r}
+mixseg<-worker()
+seg <- mixseg[datause$App]
+segA<-data.frame(table(seg))
+segC<-data.frame(table(seg[nchar(seg)>1]))#data.frame
+segC_top50<-head(segC[order(segC$Freq,decreasing = TRUE),],50)
+library(wordcloud)
+par(family=("Heiti TC Light"))
+wordcloud(
+  words = segC_top50[,1], # 或segC_top50$Var1
+  freq =  segC_top50$Freq, 
+  scale = c(4,.1), # 給定文字尺寸的區間（向量）
+  random.order = FALSE,# 關閉文字隨機顯示 按順序
+  ordered.colors = FALSE,#關閉配色順序
+  rot.per = FALSE,#關閉文字轉角度
+  min.freq = 7,# 定義最小freq數字 
+  colors = brewer.pal(8,"Dark2")
+)
+
+```
+

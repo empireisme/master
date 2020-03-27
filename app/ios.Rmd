@@ -295,7 +295,7 @@ summary(fm.tobit)
 
 文字雲的結果
 
-```{r}
+```{r  warning=FALSE}
 mixseg<-worker()
 
 seg <- mixseg[dff$track_name]
