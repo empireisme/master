@@ -5,6 +5,11 @@ date: "2020年3/27"
 output: html_document
 ---
 
+you can find the file in 
+their name are googleplaystore.csv and wordcloud
+
+https://github.com/empireisme/master/tree/master/app
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -19,7 +24,7 @@ require(wordcloud)
 
 2.please put this file(rmd) and the googleplaystore.csv in the same folder
 
-```{r}
+```{r   warning=FALSE}
 
 getwd()
 data<- read_csv("googleplaystore.csv")
@@ -33,11 +38,24 @@ seg <- mixseg[datause$App]
 segA<-data.frame(table(seg))
 segC<-data.frame(table(seg[nchar(seg)>1]))#data.frame
 segC_top50<-head(segC[order(segC$Freq,decreasing = TRUE),],50)
+
+
+```
+
+```{r}
+word_remove<- c("for","The","and","of","the","by","with","to","in","For")
+
+index<- which(segC_top50$Var1%in%word_remove) # tell you where is the word you want to remove
+
+android<- segC_top50[-index,]
+```
+
+```{r}
 library(wordcloud)
 par(family=("Heiti TC Light"))
 wordcloud(
-  words = segC_top50[,1], # 或segC_top50$Var1
-  freq =  segC_top50$Freq, 
+  words = android[,1], # 或segC_top50$Var1
+  freq =  android$Freq, 
   scale = c(4,.1), # 給定文字尺寸的區間（向量）
   random.order = FALSE,# 關閉文字隨機顯示 按順序
   ordered.colors = FALSE,#關閉配色順序
@@ -45,6 +63,94 @@ wordcloud(
   min.freq = 7,# 定義最小freq數字 
   colors = brewer.pal(8,"Dark2")
 )
+```
 
+
+#請注意路徑要自己改!
+
+```{r}
+
+ios <- read_csv("C:/Users/User/Desktop/AppleStore.csv")
+datause<- ios
+
+```
+
+```{r}
+mixseg<-worker()
+seg <- mixseg[datause$track_name]
+segA<-data.frame(table(seg))
+segC<-data.frame(table(seg[nchar(seg)>1]))#data.frame
+segC_top50<-head(segC[order(segC$Freq,decreasing = TRUE),],50)
+
+
+```
+
+please see this segC_top50 it is a frenquency table
+
+```{r}
+
+segC_top50
+
+```
+
+put the word you want to remove in word_remove function
+
+```{r}
+word_remove<- c("for","The","and","of","the","by","with","to","in","For")
+
+index<- which(segC_top50$Var1%in%word_remove) # tell you where is the word you want to remove
+
+ios1<- segC_top50[-index,]
+
+
+```
+
+
+```{r   warning=FALSE}
+library(wordcloud)
+par(family=("Heiti TC Light"))
+wordcloud(
+  words = ios1[,1], # 或segC_top50$Var1
+  freq =  ios1$Freq, 
+  scale = c(4,.1), # 給定文字尺寸的區間（向量）
+  random.order = FALSE,# 關閉文字隨機顯示 按順序
+  ordered.colors = FALSE,#關閉配色順序
+  rot.per = FALSE,#關閉文字轉角度
+  min.freq = 7,# 定義最小freq數字 
+  colors = brewer.pal(8,"Dark2")
+)
+```
+
+put two in same page
+
+```{r}
+
+par(mfrow = c(1,2)) 
+
+library(wordcloud)
+par(family=("Heiti TC Light"))
+wordcloud(
+  words = android[,1], # 或segC_top50$Var1
+  freq =  android$Freq, 
+  scale = c(3,.1), # 給定文字尺寸的區間（向量）
+  random.order = FALSE,# 關閉文字隨機顯示 按順序
+  ordered.colors = FALSE,#關閉配色順序
+  rot.per = FALSE,#關閉文字轉角度
+  min.freq = 7,# 定義最小freq數字 
+  colors = brewer.pal(8,"Dark2")
+)
+
+library(wordcloud)
+par(family=("Heiti TC Light"))
+wordcloud(
+  words = ios1[,1], # 或segC_top50$Var1
+  freq =  ios1$Freq, 
+  scale = c(3,.1), # 給定文字尺寸的區間（向量）
+  random.order = FALSE,# 關閉文字隨機顯示 按順序
+  ordered.colors = FALSE,#關閉配色順序
+  rot.per = FALSE,#關閉文字轉角度
+  min.freq = 7,# 定義最小freq數字 
+  colors = brewer.pal(8,"Dark2")
+)
 ```
 

@@ -1,0 +1,41 @@
+---
+title: "appios"
+author: "Chen Ning Kuan"
+date: "2020年3月31日"
+output: 
+  html_document:
+    theme: cerulean
+    toc: true
+    # toc_depth: 2
+    number_sections: true
+  # word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+#緒論
+
+
+#文獻回顧
+
+
+
+#變數說明及敘述統計
+
+
+
+#模型設計與實證結果
+
+
+
+#討論與建議
+
+
+
+
+
+
+
