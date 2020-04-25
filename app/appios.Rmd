@@ -18,8 +18,27 @@ knitr::opts_chunk$set(echo = TRUE)
 
 #緒論
 
+$$\min_{\beta_0,\beta}      $$
+$$\min_{\beta_0,\beta} \sum_{i=1}^n {(y_i-\beta_0-\sum_{j=1}^p{ x_{ij}\beta_j })^2}+\lambda \left\|\beta\right\|_1$$ 
 
 
+$$Y_i^*=\beta_0+\beta_1\texttt{ratingcounttot}+\beta_2\texttt{ratingcountver}+\beta_3\texttt{userrating}+\beta_4\texttt{userrating_ver}+\beta_5\\\texttt{supdevices.num}+\beta_6\texttt{ipadScurls.num}+\beta_7\texttt{lang.num}+\beta_8\texttt{vpplic}+\beta_9\texttt{sizeMB}$$
+
+
+$$Y_i=
+\begin{cases}
+Y_i^*&  Y_i^* >0\\
+0& Y_i^* \leq 0
+\end{cases} $$
+
+
+$$
+    Y_i = \left\{\begin{array}{lr}
+        Y_i^*, & \text{for } Y_i^*\leq n\leq 1\\
+        0, & \text{for } 0\leq n\leq 1\\
+        
+        \end{array}\right\} 
+  $$
 #文獻回顧
 
 
@@ -34,7 +53,18 @@ knitr::opts_chunk$set(echo = TRUE)
 
 #討論與建議
 
+```{r}
+require(stargazer)
+require(mlbench)
+```
 
+```{r}
+data(BostonHousing)
+
+m1 <- lm(medv~.,data = BostonHousing     )
+
+stargazer(m1, align = TRUE)
+```
 
 
 

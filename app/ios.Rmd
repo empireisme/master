@@ -22,6 +22,7 @@ require(GGally)
 require(AER)
 require(rminer)
 require(jiebaR)
+require(stargazer)
 ```
 
 ```{r  warning=FALSE ,results='hide',include = FALSE}
@@ -117,10 +118,23 @@ sum(is.na.data.frame(ios))
 秀出我們的變數的敘述統計
 
 ```{r}
-m<- summary(ios)
+#m<- summary(ios[,4:7])
+#class(ios)
+#knitr::kable(m)
+#colnames(ios)
+#stargazer(ios[,1:11],summary = T)
+#stargazer(m)
 
-knitr::kable(m)
+#n <- summary(dff)
+#stargazer(dff)
 
+#dim(dff)
+
+dff<- as.data.frame(dff)
+class(dff)
+dff2 <- as.data.frame(ios)
+dim(ios)
+stargazer(dff2,omit.summary.stat = c("p25", "p75"))
 ```
 
 
@@ -136,6 +150,10 @@ M<- cor(df)
 
 corrplot(M, method="circle")
 corrplot(M, method="number")
+
+correlation.matrix <- cor(df) 
+stargazer(correlation.matrix, title = "Ios APP的相關係數矩陣")
+
 ```
 
 可以看出變數之間除了目前的user rating和所有版本的user rating外，其餘變數之間並無線性關係
@@ -151,6 +169,8 @@ m1<- table(ios$cont_rating)
 barplot(m1)
 
 knitr::kable(m1)
+
+\
 
 ```
 
@@ -281,7 +301,11 @@ fm.tobit$scale
 
 exp(2.257355544)
 
+stargazer(fm.tobit  )
 
+```
+
+```{r}
 require(AER)
 require(wooldridge)
 require(npsf)
@@ -292,6 +316,8 @@ data = mroz)
 summary(fm.tobit)
 
 ```
+
+
 
 文字雲的結果
 

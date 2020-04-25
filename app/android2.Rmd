@@ -39,6 +39,7 @@ library(glmnet)
 require(caret)
 require(jiebaR)
 require(MASS)
+require(stargazer)
 ```
 
 # 1.變數介紹:
@@ -163,8 +164,39 @@ datause2 %>% rename(Content_Rating=`Content Rating`)
 
 ```
 
+show the summary statistic in r
+
+```{r}
+
+#datause3 <- as.data.frame(datause2)
+#stargazer(datause3,omit.summary.stat = c("p25", "p75"))
+
+```
+
+
+```{r}
+df <- datause3[,-c(1,5,7,8)]
+correlation.matrix <- cor(df) 
+
+#stargazer(correlation.matrix, title = "Android APP的相關係數矩陣")
+
+M<- cor(df)
+
+corrplot(M, method="number")
+
+```
+
 
 # 3.感興趣的問題
+
+```{r}
+qplot(Rating, data = datause3, geom = "density",
+  fill = Type, alpha = I(.5),
+  main="Distribution of App rating",
+  xlab="Rating",
+  ylab="Density")
+```
+
 
 
 ## 3.1哪些因素會影響APP的訂價
@@ -180,7 +212,9 @@ Tobit model中的corner soution
 fm.tobit <- tobit(Price ~Reviews+Rating+Installs+size_mb+small_app,
 data = datause2)
 
-summary(fm.tobit)
+m4 <- summary(fm.tobit)
+
+stargazer(fm.tobit)
 
 ```
 
@@ -249,7 +283,7 @@ df_numeric <- df_numeric[,-c(1,5,7,8)]
 
 ```
 
-## 3.5針對app name去做文字雲
+## 針對app name去做文字雲
 
 ```{r   warning=FALSE   }
 mixseg<-worker()
@@ -276,13 +310,13 @@ wordcloud(
 ```
 
 
-## 3.6針對app 的評論去做正負面分析判斷
+## 針對app 的評論去做正負面分析判斷
 
 - 1.先刪掉沒有評論和中立性的發言
 - 2.先做BOW matrix
 - 3.將BOW的模型處理的 matrix當成input 丟入 logsitic regression中
 
-### 3.6.1先刪掉沒有評論和中立性的發言
+### 先刪掉沒有評論和中立性的發言
 
 ```{r}
 library(text2vec)
@@ -296,7 +330,7 @@ review2 <- review2[,-c(3,4,5)]
 review2 <- review2 [,c( 3,1,2,4    )]
 ```
 
-### 3.6.2製作BOW矩陣
+### 製作BOW矩陣
 
 這裡簡單介紹何謂BOW matrix
 
@@ -344,7 +378,7 @@ dim(m)
 ```
 
 
-### 3.6.3建立logistic regression
+### 建立logistic regression
 
 將bow matrix當成feature給logistic regression
 
@@ -367,9 +401,17 @@ glmnet_classifier = cv.glmnet(x = dtm_train, y = train[['sentiment']],
                               maxit = 1e3)
 
 
+plot(glmnet_classifier    )
+
+glmnet_classifier$lambda.min
+coef <- coef(glmnet_classifier, s = glmnet_classifier$lambda.min)
+
+which(coef!=0) %>% length
+
+dim(dtm_train)
 ```
 
-### 3.6.4訓練集的混淆矩陣
+### 訓練集的混淆矩陣
 
 ```{r}
 train_real<- ifelse(train$sentiment>0,"positive"," negative"   )
@@ -380,7 +422,7 @@ predictions <- as.factor(predictions)
 confusionMatrix( predictions,train_real)
 ```
 
-### 3.6.5ROC curve of training data
+### ROC curve of training data
 
 ```{r}
 
@@ -389,7 +431,7 @@ plot(roc(train$sentiment,preds , direction="<"),
 
 ```
 
-### 3.6.5Auc of training data
+### Auc of training data
 
 ```{r}
 glmnet:::auc(train$sentiment, preds)
@@ -410,7 +452,7 @@ dtm_test = create_dtm(it_test, vectorizer)
 
 ```
 
-### 3.6.6測試集的混淆矩陣
+### 測試集的混淆矩陣
 
 ```{r}
 test_real<- ifelse(test$sentiment>0,"positive"," negative"   )
@@ -421,14 +463,14 @@ predictions <- as.factor(predictions)
 confusionMatrix( predictions      ,test_real)
 ```
 
-### 3.6.7Roc curve of testing data
+### Roc curve of testing data
 
 ```{r}
 plot(roc(test$sentiment,preds , direction="<"), 
      col="red", lwd=1, main="ROC curve") 
 
 ```
-### 3.6.7Auc of testing data
+### Auc of testing data
 ```{r}
 glmnet:::auc(test$sentiment, preds)
 ```
@@ -479,5 +521,7 @@ summary(m)
 p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
 (ctable <- cbind(ctable, "p value" = p))
 ctable
+
+stargazer(m)
 ```
 
