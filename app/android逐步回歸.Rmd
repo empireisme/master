@@ -1,0 +1,312 @@
+---
+title: "googleplaydataset"
+author: "Chen Ning Kuan"
+date: "2020年1月27日"
+output: 
+  html_document:
+    theme: cerulean
+    toc: true
+    # toc_depth: 2
+    number_sections: true
+  # word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(dplyr)
+require(magrittr)
+library(readr)
+require(ggplot2)
+require(stringr)
+options(scipen = 9)
+library(tidyverse)
+require(DT)
+require(ranger)
+require(GGally)
+require(AER)
+library(data.table) ##載入
+library(stringr)
+require(ranger)
+library(stargazer)
+require(rminer)
+library(text2vec)
+require(e1071)
+library(C50)
+library(pROC) 
+library(data.table)
+library(text2vec)
+library(glmnet)
+require(caret)
+require(jiebaR)
+require(MASS)
+require(stargazer)
+```
+
+# 1.變數介紹:
+
+我們有13個變數，包含10841個樣本
+
+- App:Application name
+
+- Category:Category the app belongs to
+
+- Rating:Overall user rating of the app (as when scraped)
+
+- Reviews:Number of user reviews for the app (as when scraped)
+
+- Size:Size of the app (as when scraped)
+
+- Installs:Number of user downloads/installs for the app (as when scraped)
+
+- Type:Paid or Free
+
+- Price:Price of the app (as when scraped)
+
+- Content Rating:Age group the app is targeted at - Children / Mature 21+ / Adult
+
+- Genres:An app can belong to multiple genres (apart from its main category). For eg, a musical family game will belong to Music, Game, Family genres.
+
+- Last UpdatedDate: when the app was last updated on Play Store (as when scraped)
+
+- Current VerCurrent: version of the app available on Play Store (as when scraped)
+
+- Android Ver:Min required Android version (as when scraped)
+
+
+
+# 2.資料處理方式
+
+## 2.1刪掉的變數
+
+我們刪掉 App,Last UpdatedDate,Current VerCurrent,Android Ver這4個變數
+
+## 2.2變數處理方式
+
+- 將Size變數全部轉成MB大小，並且刪除Size變數中 大小隨裝置改變的APP樣本去除
+- 將Installs變數的"+"號去除
+- 將Rating變數NA的樣本去除
+- 新增一個變數叫做small app ，容量小於1MB的叫做small app
+
+最後剩下7729個樣本和10個變數
+
+```{r     include=FALSE  }
+getwd()
+data<- read_csv("googleplaystore.csv")
+datause <- data
+#datause<- data.table(datause)
+
+review<- read_csv("googleplaystore_user_reviews.csv")
+```
+
+```{r    include=FALSE   }
+
+datause <- datause[-which(datause$Rating>5),]
+#datause 
+#datause<- datatable( datause  )
+
+datause$Price <- as.numeric(gsub('[$]', '', datause$Price))
+datause$Price<- as.numeric(datause$Price)
+
+datause$Installs <- as.numeric(gsub('[+,]', '', datause$Installs))
+
+sum(is.na(datause$Rating))
+
+```
+
+```{r     include=FALSE            }
+
+class(datause$Size)
+#datause$Size <- factor( datause$Size  )
+#levels(datause$Size)
+
+#datause$Size<- as.character(datause$Size)
+
+datause2 <- datause[-which(datause$Size=="Varies with device" ),]#以下刪掉 大小隨裝置改變的樣本
+
+datause2$size <- str_sub(datause2$Size, end=-2)
+
+```
+
+```{r       include=FALSE}
+right = function(x,n){
+  substring(x,nchar(x)-n+1)
+}
+```
+
+```{r     include=FALSE       }
+#right(datause2$Size,1 )
+datause2$mk <-right(datause2$Size,1 ) 
+datause2$size <- as.numeric(datause2$size)
+datause2$size_mb <- ifelse(datause2$mk=="k",1/1024,1)*datause2$size
+datause2$small_app <-ifelse(datause2$mk=="k",1,0)
+datause2 <- datause2[ ,-5]
+datause2 <- datause2[,-14]
+datause2 <- datause2[,-13]
+datause2 <- datause2[,-c(1,10,11,12)]
+dim(datause2)
+datause2<- datause2[-which(is.na(datause2$Rating)),]
+sum(is.na.data.frame(
+datause2)) #check any NA in data.frame
+```
+
+```{r   include=FALSE       }
+datause2$`Content Rating`<- factor(datause2$`Content Rating`)
+levels(datause2$`Content Rating`  )
+datause2$Type<- factor(datause2$Type)
+datause2$Category<- factor(datause2$Category)
+datause2$Genres<- factor(datause2$Genres)
+#levels(datause2$Genres)
+#levels(datause2$Category)
+
+
+datause2<- 
+datause2 %>% rename(Content_Rating=`Content Rating`)
+
+```
+
+show the summary statistic in r
+
+```{r}
+
+datause3 <- as.data.frame(datause2)
+#stargazer(datause3,omit.summary.stat = c("p25", "p75"))
+
+```
+
+
+```{r}
+df <- datause3[,-c(1,5,7,8)]
+correlation.matrix <- cor(df) 
+
+#stargazer(correlation.matrix, title = "Android APP的相關係數矩陣")
+
+M<- cor(df)
+library(corrplot)
+corrplot(M, method="number")
+
+```
+
+
+# 3.感興趣的問題
+
+```{r}
+qplot(Rating, data = datause3, geom = "density",
+  fill = Type, alpha = I(.5),
+  main="Distribution of App rating",
+  xlab="Rating",
+  ylab="Density")
+```
+
+
+
+## 3.1哪些因素會影響APP的訂價
+
+  這裡我們配適Tobit model中的corner soution 模型，以Price作為outcome，以Review,Rating,Installs,size_mb,small_app作為feature 
+，這裡使用Tobit model是因為Price有很多價格都等於0
+
+  note: 這裡我是參考別人配適婚外情的data，我不太確定left cersored在0是不是就等價
+Tobit model中的corner soution
+
+
+```{r}
+fm.tobit <- tobit(Price ~Reviews,
+data = datause2)
+m1 <- summary(fm.tobit)
+
+fm.tobit <- tobit(Price ~Reviews+Rating,
+data = datause2)
+
+m2 <- summary(fm.tobit)
+fm.tobit <- tobit(Price ~Reviews+Rating+Installs,
+data = datause2)
+m3 <- summary(fm.tobit)
+fm.tobit <- tobit(Price ~Reviews+Rating+Installs+size_mb,
+data = datause2)
+m4 <- summary(fm.tobit)
+
+fm.tobit <- tobit(Price ~Reviews+Rating+Installs+size_mb+small_app,
+data = datause2)
+m5 <- summary(fm.tobit)
+```
+
+
+```{r}
+m1
+m2
+m3
+m4
+m5
+```
+
+
+low(1-10000)
+
+medium(10000-1000000)
+
+high(10^6 up)
+
+```{r}
+
+#ifelse(datause2$Installs<10000 ,"low" ,"medium"     ) 
+a<- datause2$Installs
+
+ordinal<- cut(a, c(-Inf,10000,1000000,Inf), c("low","medium","high"),right=T)
+
+datause2$ordinal <- ordinal
+
+df <- datause2[,-c( 1,4,8  )]
+#a[which(1000000<=a),1] <- "high"
+#a[which(a<10000),1]<-"low"
+#a[which(10000<=a&a<1000000),1] <- "medium"
+
+m <- polr(ordinal~ Price+Rating+size_mb+small_app, data = df, Hess=TRUE)
+summary(m)
+(ctable <- coef(summary(m)))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+(ctable <- cbind(ctable, "p value" = p))
+ctable
+```
+
+
+
+```{r}
+m <- polr(ordinal~ Price, data = df, Hess=TRUE)
+
+(ctable <- coef(summary(m)))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+(ctable <- cbind(ctable, "p value" = p))
+ctable
+
+summary(m)
+```
+
+```{r}
+m <- polr(ordinal~ Price+Rating, data = df, Hess=TRUE)
+
+(ctable <- coef(summary(m)))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+(ctable <- cbind(ctable, "p value" = p))
+ctable
+
+summary(m)
+```
+
+```{r}
+m <- polr(ordinal~ Price+Rating+small_app, data = df, Hess=TRUE)
+summary(m)
+(ctable <- coef(summary(m)))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+(ctable <- cbind(ctable, "p value" = p))
+ctable
+```
+
+```{r}
+m <- polr(ordinal~ Price+Rating+small_app+size_mb, data = df, Hess=TRUE)
+summary(m)
+(ctable <- coef(summary(m)))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+(ctable <- cbind(ctable, "p value" = p))
+ctable
+
+```
+

@@ -188,7 +188,7 @@ corrplot(M, method="number")
 ```
 
 
-## 論文
+## 論文圖6 Android 評價分布
 
 ```{r}
 qplot(Rating, data = datause3, geom = "density",
@@ -247,24 +247,7 @@ set.seed(1)
 rf2<- ranger(Rating~Reviews+Installs+size_mb+small_app+Price+Type+Category+Genres+Content_Rating ,datause2, quantreg = TRUE,importance='impurity')
 ```
 
-```{r}
-rf2$variable.importance %>% 
-  as.matrix() %>% 
-  as.data.frame() %>% 
-  add_rownames() %>% 
-  `colnames<-`(c("varname","imp")) %>%
-  arrange(desc(imp)) %>% 
-  top_n(25,wt = imp) %>% 
-  ggplot(mapping = aes(x = reorder(varname, imp), y = imp))   +
-  geom_col() +
-  coord_flip() +
-  xlab("")+
-  ggtitle(label = "Top 9 important variables") +
-  theme(
-    axis.title = element_blank()
-  )+xlab("My x label")
-```
-
+## 論文圖8 隨機森林的結果
 
 ```{r}
 rf2$variable.importance %>% 
@@ -323,7 +306,7 @@ df_numeric <- df_numeric[,-c(1,5,7,8)]
 
 ```
 
-## 針對app name去做文字雲
+## 論文圖4  Android APP 文字雲
 
 ```{r   warning=FALSE   }
 mixseg<-worker()
@@ -350,7 +333,7 @@ wordcloud(
 ```
 
 
-## 針對app 的評論去做正負面分析判斷
+## 針對app 的評論去做正負面分析判斷(論文圖9到11)
 
 - 1.先刪掉沒有評論和中立性的發言
 - 2.先做BOW matrix
@@ -540,6 +523,8 @@ high(10^6 up)
 ```{r}
 sum( table(datause2$Installs)  ) # just for check
 ```
+
+## 論文表7 有序回歸模型
 
 ```{r}
 

@@ -102,22 +102,10 @@ ios <- ios[,-1]
 ```
 
 
-這裡可以看出所有的資料，至此我們總共有13個變數外加7197個觀察值，我們的資料沒有任何遺漏值
-
-秀出我們有的所有資料
-
-```{r}
-
-DT::datatable(ios, options = list(
-pageLength=50, scrollX='400px'), filter = 'top')
-
-#any NA in data.frame
-sum(is.na.data.frame(ios))
-
-
-```
 
 秀出我們的變數的敘述統計
+
+
 
 ```{r}
 #m<- summary(ios[,4:7])
@@ -140,9 +128,8 @@ stargazer(dff2,omit.summary.stat = c("p25", "p75"))
 ```
 
 
-#三 資料視覺化
+#三 論文圖1 ios相關係數矩陣
 
-##3.1 畫出correlation matrix
 
 ```{r}
 library(corrplot)
@@ -160,24 +147,6 @@ stargazer(correlation.matrix, title = "Ios APP的相關係數矩陣")
 
 可以看出變數之間除了目前的user rating和所有版本的user rating外，其餘變數之間並無線性關係
 
-##3.2 大部分APP的使用年齡
-
-```{r}
-m1<- table(ios$cont_rating)
-
-table(ios$cont_rating)
-ios$cont_rating <- factor(ios$cont_rating,levels = c("4+", "9+", "12+", "17+"))
-m1<- table(ios$cont_rating)
-barplot(m1)
-
-knitr::kable(m1)
-
-
-```
-
-可以看出大部分的APP都是設計出來給4歲以上使用即可
-
-
 
 #四 感興趣的問題
 
@@ -190,14 +159,6 @@ knitr::kable(m1)
 
 ##4.1 哪些變數會影響APP的評分?
 
-###4.1.1先使用簡單的線性回歸來看
-
-```{r}
-m1 <- lm(user_rating   ~. ,ios)
-m2<- summary(m1)
-
-data.frame(summary(m1)$coef[summary(m1)$coef[,4] <= .05, 4])
-```
 
 ###4.1.2 使用隨機森林來看哪些變數影響rating
 
@@ -207,28 +168,7 @@ set.seed(1)
 rf<- ranger(user_rating~. ,ios, quantreg = TRUE,importance='impurity')
 ```
 
-
-```{r}
-
-
-rf$variable.importance %>% 
-  as.matrix() %>% 
-  as.data.frame() %>% 
-  add_rownames() %>% 
-  `colnames<-`(c("varname","imp")) %>%
-  arrange(desc(imp)) %>% 
-  top_n(25,wt = imp) %>% 
-  ggplot(mapping = aes(x = reorder(varname, imp), y = imp)) +
-  geom_col() +
-  coord_flip() +
-  ggtitle(label = "Top 12 important variables") +
-  theme(
-    axis.title = element_blank()
-  )
-
-
-```
-
+## 論文圖7 ios 隨機森林重要變數結果
 
 ```{r}
 rf$variable.importance %>% 
@@ -251,7 +191,7 @@ rf$variable.importance %>%
 
 
 
-##4.2 付費軟體的評分有比較好嗎?
+## 論文 圖5 ios評價分布
 
 ```{r}
 qplot(user_rating, data = ios, geom = "density",
@@ -280,31 +220,12 @@ summary(res.aov)
 
 one_way anova table也告訴我們，如果評分代表著APP的品質的話，那麼付費APP確實在統計上品質顯著大於免費APP
 
-##4.3大部分的APP的定價趨勢為何? 
 
-```{r}
-
-sum(is.na(ios$price))
-#there is no NA in price
-#we draw the ecdf of this data
-
-plot(ecdf(ios$price  ))
-object<- table(ios$price  )
-barplot(log(object))
-#plot(sort(unique(applestore$price)) ,log(object)     )
-
-#log(table(applestore$price  ))
-#qplot(price,data=applestore,geom="histogram"     )
-
-#qplot(price,data=applestore,geom="histogram",log = "y")
-
-#plot(applestore$price, log="y", type='histogram')
-```
 
 APP的訂價顯然是免費居多，而且訂價有指數分布的趨勢存在
 
 
-## 4.4哪些因素影響APP定價
+## 論文表5 iOS tobit 回歸
 
 ```{r}
 fm.tobit <- tobit(price~.-cont_rating-charge-prime_genre,
@@ -386,21 +307,8 @@ summary(fm.tobit)
 ```
 
 
-```{r}
-require(AER)
-require(wooldridge)
-require(npsf)
-data(mroz)
-names(mroz)
-fm.tobit <- tobit(hours~nwifeinc+educ+exper+I(exper^2)+age+kidslt6+kidsge6,
-data = mroz)
-summary(fm.tobit)
 
-```
-
-
-
-文字雲的結果
+## 論文圖 3 iOS 文字雲
 
 ```{r  warning=FALSE}
 mixseg<-worker()
